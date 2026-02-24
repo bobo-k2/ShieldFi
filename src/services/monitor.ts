@@ -44,7 +44,7 @@ export interface MonitorAlert {
 }
 
 export async function fetchRecentTransactions(address: string, limit = 10): Promise<HeliusEnhancedTx[]> {
-  const url = `https://api.helius.dev/v0/addresses/${address}/transactions?api-key=${env.HELIUS_API_KEY}&limit=${limit}`;
+  const url = `https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${env.HELIUS_API_KEY}&limit=${limit}`;
   try {
     const res = await fetch(url);
     if (!res.ok) {
