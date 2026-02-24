@@ -33,9 +33,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     // Verify signature
-    const message = new TextEncoder().encode(
-      `Sign this message to authenticate with ShieldFi.\n\nNonce: ${nonce}`
-    );
+    const message = new TextEncoder().encode(`Sign in to ShieldFi: ${nonce}`);
     const sig = bs58.decode(signature);
     const pubkey = bs58.decode(wallet);
     const valid = nacl.sign.detached.verify(message, sig, pubkey);
