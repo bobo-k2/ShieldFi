@@ -1,4 +1,5 @@
 import { env } from '../env.js';
+import { resolveTokenNames } from './scanner.js';
 
 export interface HeliusEnhancedTx {
   signature: string;
@@ -58,10 +59,17 @@ export async function fetchRecentTransactions(address: string, limit = 10): Prom
   }
 }
 
-export function analyzeTransaction(tx: HeliusEnhancedTx, walletAddress: string): MonitorAlert[] {
+export async function analyzeTransaction(tx: HeliusEnhancedTx, walletAddress: string, tokenNames?: Map<string, string>): Promise<MonitorAlert[]> {
   const alerts: MonitorAlert[] = [];
   const addr = walletAddress;
-  const shortAddr = addr.slice(0, 4) + '...' + addr.slice(-4);
+
+  // Resolve token names if not provided
+  if (!tokenNames) {
+    const mints = (tx.tokenTransfers || []).map(t => t.mint).filter(Boolean);
+    tokenNames = mints.length > 0 ? await resolveTokenNames(mints) : new Map();
+  }
+
+  const getTokenName = (mint: string) => tokenNames!.get(mint) || mint.slice(0, 6) + '...';
 
   // Check native (SOL) outflows
   for (const nt of tx.nativeTransfers || []) {
@@ -83,30 +91,30 @@ export function analyzeTransaction(tx: HeliusEnhancedTx, walletAddress: string):
 
   // Check token transfers
   for (const tt of tx.tokenTransfers || []) {
+    const name = getTokenName(tt.mint);
+
     if (tt.fromUserAccount === addr && tt.tokenAmount > 0) {
       const shortTo = (tt.toUserAccount || 'unknown').slice(0, 4) + '...' + (tt.toUserAccount || 'unknown').slice(-4);
-      // Any token outflow > 0 is notable; large amounts are critical
       if (tt.tokenAmount > 100) {
         alerts.push({
           type: 'large_outflow',
           severity: 'WARNING',
           title: 'Token Outflow Detected',
-          message: `${tt.tokenAmount.toLocaleString()} tokens (${tt.mint.slice(0, 8)}...) sent to ${shortTo}`,
+          message: `${tt.tokenAmount.toLocaleString()} ${name} sent to ${shortTo}`,
           txSignature: tx.signature,
           walletAddress: addr,
         });
       }
     }
 
-    // New token received (potential airdrop)
+    // New token received
     if (tt.toUserAccount === addr && tt.fromUserAccount !== addr) {
-      // Only flag if it looks unsolicited (not a swap return)
       if (tx.type !== 'SWAP') {
         alerts.push({
           type: 'new_token_received',
           severity: 'INFO',
           title: 'New Token Received',
-          message: `Received ${tt.tokenAmount.toLocaleString()} tokens (${tt.mint.slice(0, 8)}...)`,
+          message: `Received ${tt.tokenAmount.toLocaleString()} ${name}`,
           txSignature: tx.signature,
           walletAddress: addr,
         });

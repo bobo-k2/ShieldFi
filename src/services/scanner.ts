@@ -291,3 +291,13 @@ export async function scanWalletApprovals(walletAddress: string) {
 
   return { approvals: allApprovals, walletScore };
 }
+
+// Resolve mint addresses to token names (for use by monitor)
+export async function resolveTokenNames(mints: string[]): Promise<Map<string, string>> {
+  const metaMap = await fetchTokenMetadataBatch(mints);
+  const names = new Map<string, string>();
+  for (const [mint, meta] of metaMap) {
+    names.set(mint, meta.symbol || mint.slice(0, 6) + '...');
+  }
+  return names;
+}

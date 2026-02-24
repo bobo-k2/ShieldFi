@@ -1,6 +1,7 @@
 import { prisma } from '../db.js';
 import { fetchRecentTransactions, analyzeTransaction, detectRapidTransactions } from './monitor.js';
 import { sendTelegramAlert } from './telegram.js';
+import { resolveTokenNames } from './scanner.js';
 import type { MonitorAlert } from './monitor.js';
 
 class MonitorManager {
@@ -74,9 +75,13 @@ class MonitorManager {
 
     const allAlerts: MonitorAlert[] = [];
 
+    // Batch resolve all token names upfront
+    const allMints = newTxs.flatMap(tx => (tx.tokenTransfers || []).map(t => t.mint)).filter(Boolean);
+    const tokenNames = allMints.length > 0 ? await resolveTokenNames([...new Set(allMints)]) : new Map<string, string>();
+
     // Analyze each transaction
     for (const tx of newTxs) {
-      const alerts = analyzeTransaction(tx, address);
+      const alerts = await analyzeTransaction(tx, address, tokenNames);
       allAlerts.push(...alerts);
     }
 

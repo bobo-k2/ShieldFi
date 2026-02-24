@@ -9,10 +9,6 @@ export interface AlertPayload {
   txSignature?: string;
 }
 
-function escapeMarkdownV2(text: string): string {
-  return text.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
-}
-
 function severityEmoji(severity: string): string {
   switch (severity) {
     case 'CRITICAL': return '🚨';
@@ -22,18 +18,22 @@ function severityEmoji(severity: string): string {
   }
 }
 
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export function formatAlertMessage(alert: AlertPayload): string {
   const emoji = severityEmoji(alert.severity);
-  const shortWallet = alert.walletAddress.slice(0, 4) + '\\.\\.\\.' + alert.walletAddress.slice(-4);
-  const time = escapeMarkdownV2(new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC');
+  const shortWallet = alert.walletAddress.slice(0, 4) + '...' + alert.walletAddress.slice(-4);
+  const time = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
 
-  let msg = `${emoji} *${escapeMarkdownV2(alert.severity)}: ${escapeMarkdownV2(alert.title)}*\n\n`;
-  msg += `🏦 Wallet: \`${escapeMarkdownV2(alert.walletAddress)}\`\n`;
-  msg += `${escapeMarkdownV2(alert.message)}\n\n`;
+  let msg = `${emoji} <b>${escapeHtml(alert.severity)}: ${escapeHtml(alert.title)}</b>\n\n`;
+  msg += `🏦 Wallet: <code>${shortWallet}</code>\n`;
+  msg += `${escapeHtml(alert.message)}\n\n`;
   msg += `⏰ ${time}`;
 
   if (alert.txSignature) {
-    msg += `\n🔗 [View on Solscan](https://solscan.io/tx/${alert.txSignature})`;
+    msg += `\n🔗 <a href="https://solscan.io/tx/${alert.txSignature}">View on Solscan</a>`;
   }
 
   return msg;
@@ -61,7 +61,7 @@ export async function sendTelegramAlert(alert: AlertPayload, chatId?: string): P
       body: JSON.stringify({
         chat_id: chat,
         text: formatted,
-        parse_mode: 'MarkdownV2',
+        parse_mode: 'HTML',
         disable_web_page_preview: true,
       }),
     });
