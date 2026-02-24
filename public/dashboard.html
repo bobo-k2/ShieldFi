@@ -302,21 +302,46 @@ function renderLookup(data) {
 
   let html = '';
 
-  // Token balances
+  // Token balances — grouped by status
   if (data.balances && data.balances.length > 0) {
-    const totalUsd = data.balances.reduce((s, b) => s + (b.usdValue || 0), 0);
-    html += `<div class="section-title">Token Balances${totalUsd > 0 ? ` — Total: $${totalUsd.toFixed(2)}` : ''}</div>`;
-    html += '<table><thead><tr><th>Token</th><th style="text-align:right">Balance</th><th style="text-align:right">USD Value</th></tr></thead><tbody>';
-    for (const b of data.balances) {
-      const fmtBal = typeof b.balance === 'number' ? b.balance.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 4}) : b.balance;
-      const fmtUsd = b.usdValue != null ? `$${b.usdValue.toFixed(2)}` : '<span style="color:#444">—</span>';
-      html += `<tr>
-        <td>${b.icon ? `<img src="${b.icon}" width="20" height="20" style="border-radius:50%;vertical-align:middle;margin-right:8px" onerror="this.style.display='none'">` : '<span style="display:inline-block;width:20px;height:20px;margin-right:8px"></span>'}${b.symbol}</td>
-        <td style="text-align:right;font-family:monospace;color:#ccc">${fmtBal}</td>
-        <td style="text-align:right;font-family:monospace;${b.usdValue > 0 ? 'color:#00d4aa' : ''}">${fmtUsd}</td>
-      </tr>`;
+    const verified = data.balances.filter(b => b.status === 'verified');
+    const unknown = data.balances.filter(b => b.status === 'unknown');
+    const suspicious = data.balances.filter(b => b.status === 'suspicious');
+    const totalUsd = verified.reduce((s, b) => s + (b.usdValue || 0), 0);
+
+    function renderBalanceTable(tokens, showUsd) {
+      let t = '<table><thead><tr><th>Token</th><th style="text-align:right">Balance</th>';
+      if (showUsd) t += '<th style="text-align:right">USD Value</th>';
+      t += '</tr></thead><tbody>';
+      for (const b of tokens) {
+        const fmtBal = typeof b.balance === 'number' ? b.balance.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 4}) : b.balance;
+        const fmtUsd = b.usdValue != null ? `$${b.usdValue.toFixed(2)}` : '<span style="color:#444">—</span>';
+        const flagTip = b.flags && b.flags.length ? ` title="${b.flags.join(', ')}"` : '';
+        t += `<tr${flagTip}>
+          <td>${b.icon ? `<img src="${b.icon}" width="20" height="20" style="border-radius:50%;vertical-align:middle;margin-right:8px" onerror="this.style.display='none'">` : '<span style="display:inline-block;width:20px;height:20px;margin-right:8px"></span>'}${b.symbol}</td>
+          <td style="text-align:right;font-family:monospace;color:#ccc">${fmtBal}</td>`;
+        if (showUsd) t += `<td style="text-align:right;font-family:monospace;${b.usdValue > 0 ? 'color:#00d4aa' : ''}">${fmtUsd}</td>`;
+        t += '</tr>';
+      }
+      t += '</tbody></table>';
+      return t;
     }
-    html += '</tbody></table><br>';
+
+    if (verified.length > 0) {
+      html += `<div class="section-title">✅ Verified Tokens — Total: $${totalUsd.toFixed(2)}</div>`;
+      html += renderBalanceTable(verified, true) + '<br>';
+    }
+
+    if (unknown.length > 0) {
+      html += `<div class="section-title">❓ Unknown Tokens (${unknown.length})</div>`;
+      html += renderBalanceTable(unknown, false) + '<br>';
+    }
+
+    if (suspicious.length > 0) {
+      html += `<div class="section-title" style="color:#ff6644">⚠️ Suspicious Tokens (${suspicious.length}) — likely spam airdrops</div>`;
+      html += '<div style="font-size:0.8rem;color:#666;margin-bottom:0.5rem">These tokens may be scam airdrops. Do not interact with them.</div>';
+      html += renderBalanceTable(suspicious, false) + '<br>';
+    }
   }
 
   // Approvals

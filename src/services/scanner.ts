@@ -193,22 +193,60 @@ export async function lookupWalletApprovals(walletAddress: string) {
     };
   });
 
+  // Known token names that scammers impersonate
+  const IMPERSONATED_NAMES = new Set(['SOL', 'ETH', 'BTC', 'USDC', 'USDT', 'BONK', 'JUP', 'WIF', 'PYTH', 'JTO', 'RNDR', 'HNT']);
+  // Real mint addresses for common tokens
+  const REAL_MINTS = new Set([
+    'So11111111111111111111111111111111111111112',  // wSOL
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+    'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
+  ]);
+
   const balances = rawBalances.map(b => {
     const meta = metaMap.get(b.mint) || { decimals: 0 };
     const rawBal = BigInt(b.balance);
     const decimals = meta.decimals || 0;
     const humanBalance = Number(rawBal) / Math.pow(10, decimals);
     const usdValue = meta.priceUsd ? humanBalance * meta.priceUsd : null;
+    const symbol = meta.symbol || b.mint.slice(0, 6);
+
+    // Classify token
+    let status: 'verified' | 'unknown' | 'suspicious' = 'unknown';
+    const flags: string[] = [];
+
+    if (usdValue != null && usdValue > 0) {
+      status = 'verified';
+    } else {
+      // Suspicious signals
+      if (decimals === 0 && humanBalance < 1000) flags.push('Zero decimals');
+      if (IMPERSONATED_NAMES.has(symbol.toUpperCase()) && !REAL_MINTS.has(b.mint)) {
+        flags.push('Impersonates known token');
+        status = 'suspicious';
+      }
+      if (symbol.includes('$') || symbol.includes('Ƨ') || symbol.includes('Ɐ') || /[^\x20-\x7E]/.test(symbol)) {
+        flags.push('Unusual characters in name');
+        status = 'suspicious';
+      }
+      if (flags.length >= 2) status = 'suspicious';
+    }
+
     return {
       mint: b.mint,
-      symbol: meta.symbol || b.mint.slice(0, 6),
+      symbol,
       icon: meta.icon || null,
       rawBalance: b.balance,
       balance: humanBalance,
       decimals,
       usdValue,
+      status,
+      flags,
     };
-  }).sort((a, b) => (b.usdValue || 0) - (a.usdValue || 0));
+  }).sort((a, b) => {
+    // Sort: verified first (by USD), then unknown, then suspicious
+    const order = { verified: 0, unknown: 1, suspicious: 2 };
+    if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+    return (b.usdValue || 0) - (a.usdValue || 0);
+  });
 
   const { scoreWallet } = await import('./risk.js');
   const walletScore = approvals.length > 0
