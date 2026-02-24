@@ -12,6 +12,8 @@ import { walletRoutes } from './routes/wallets.js';
 import { approvalRoutes, approvalPublicRoutes } from './routes/approvals.js';
 import { alertRoutes } from './routes/alerts.js';
 import { webhookRoutes } from './routes/webhooks.js';
+import { monitorRoutes } from './routes/monitor.js';
+import { monitorManager } from './services/monitorManager.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -31,6 +33,7 @@ await app.register(approvalPublicRoutes);
 await app.register(approvalRoutes);
 await app.register(alertRoutes);
 await app.register(webhookRoutes);
+await app.register(monitorRoutes);
 
 app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
   if (err) {
@@ -38,4 +41,7 @@ app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
     process.exit(1);
   }
   app.log.info(`${APP.name} v${APP.version} listening on ${address}`);
+
+  // Start polling monitor
+  monitorManager.start(30000);
 });

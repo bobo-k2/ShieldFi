@@ -85,3 +85,34 @@ model Alert {
 
   @@map("alerts")
 }
+
+model MonitoredWallet {
+  id            String    @id @default(cuid())
+  address       String    @unique
+  label         String?
+  lastSignature String?
+  lastCheckedAt DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  monitorAlerts MonitorAlert[]
+
+  @@map("monitored_wallets")
+}
+
+model MonitorAlert {
+  id              String   @id @default(cuid())
+  monitoredWalletId String
+  type            String
+  severity        String
+  title           String
+  message         String
+  txSignature     String?
+  metadata        String?
+  read            Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  monitoredWallet MonitoredWallet @relation(fields: [monitoredWalletId], references: [id], onDelete: Cascade)
+
+  @@map("monitor_alerts")
+}

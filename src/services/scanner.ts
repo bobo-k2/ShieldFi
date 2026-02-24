@@ -108,7 +108,8 @@ async function scanTokenProgram(
     const isUnlimited = BigInt(delegatedAmount) >= BigInt('18446744073709551615');
 
     const risk = scoreApproval({ amount: delegatedAmount, balance, isUnlimited, grantedAt: null });
-    const meta = await fetchTokenMetadata(mint);
+    const metaMap = await fetchTokenMetadataBatch([mint]);
+    const meta = metaMap.get(mint) || { decimals: 0 };
 
     const approval = await prisma.approval.upsert({
       where: { walletId_tokenMint_spender: { walletId, tokenMint: mint, spender } },
@@ -178,11 +179,11 @@ export async function lookupWalletApprovals(walletAddress: string) {
   // Step 3: Build results with metadata
   const approvals = rawApprovals.map(a => {
     const risk = scoreApproval({ amount: a.delegatedAmount, balance: a.balance, isUnlimited: a.isUnlimited, grantedAt: null });
-    const meta = metaMap.get(a.mint) || {};
+    const meta = metaMap.get(a.mint) || { decimals: 0 };
     return {
       tokenMint: a.mint,
-      tokenSymbol: meta.symbol || null,
-      tokenIcon: meta.icon || null,
+      tokenSymbol: (meta as TokenMeta).symbol || null,
+      tokenIcon: (meta as TokenMeta).icon || null,
       spender: a.spender,
       amount: a.delegatedAmount,
       balance: a.balance,
