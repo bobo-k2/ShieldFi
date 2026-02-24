@@ -9,7 +9,7 @@ import { env } from './env.js';
 import { healthRoutes } from './routes/health.js';
 import { authRoutes } from './routes/auth.js';
 import { walletRoutes } from './routes/wallets.js';
-import { approvalRoutes } from './routes/approvals.js';
+import { approvalRoutes, approvalPublicRoutes } from './routes/approvals.js';
 import { alertRoutes } from './routes/alerts.js';
 import { webhookRoutes } from './routes/webhooks.js';
 
@@ -27,6 +27,7 @@ await app.register(fstatic, {
 await app.register(healthRoutes);
 await app.register(authRoutes);
 await app.register(walletRoutes);
+await app.register(approvalPublicRoutes);
 await app.register(approvalRoutes);
 await app.register(alertRoutes);
 await app.register(webhookRoutes);

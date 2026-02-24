@@ -76,10 +76,20 @@
     </div>
   </div>
 
+  <div style="margin-bottom:2rem; padding:1.25rem; background:#111118; border:1px solid #1a1a2e; border-radius:12px;">
+    <div class="card-label" style="margin-bottom:0.75rem">🔍 Scan Any Wallet</div>
+    <div style="display:flex; gap:0.5rem;">
+      <input id="lookupAddr" type="text" placeholder="Paste any Solana address…" 
+        style="flex:1; padding:10px 14px; background:#0a0a0a; border:1px solid #2a2a3e; border-radius:8px; color:#e0e0e0; font-family:monospace; font-size:0.9rem; outline:none;"
+        onfocus="this.style.borderColor='#00d4aa'" onblur="this.style.borderColor='#2a2a3e'">
+      <button class="btn" onclick="lookupWallet()">Scan</button>
+    </div>
+  </div>
+
   <div id="content">
     <div class="empty-state">
       <div class="icon">🔌</div>
-      <p>Connect your Phantom wallet to get started</p>
+      <p>Connect your Phantom wallet or paste any address above to scan</p>
     </div>
   </div>
 </div>
@@ -97,10 +107,11 @@ function showError(msg) {
   setTimeout(() => $('error').style.display = 'none', 5000);
 }
 
-function setScore(score) {
+function setScore(riskScore) {
   const el = $('healthScore');
-  el.textContent = score + '/100';
-  el.className = 'card-value ' + (score <= 25 ? 'score-good' : score <= 60 ? 'score-warn' : 'score-bad');
+  const health = 100 - riskScore; // Flip: 100 = safe, 0 = dangerous
+  el.textContent = health + '/100';
+  el.className = 'card-value ' + (health >= 75 ? 'score-good' : health >= 40 ? 'score-warn' : 'score-bad');
 }
 
 // Base58 encoder
@@ -188,7 +199,7 @@ async function scan() {
   $('content').innerHTML = '<div class="loading"><span class="spinner"></span> Scanning on-chain approvals…</div>';
 
   try {
-    const data = await api('/api/approvals/scan', { method: 'POST' });
+    const data = await api('/api/approvals/scan', { method: 'POST', body: '{}' });
     renderApprovals(data.approvals || [], data.walletScore || 0);
   } catch (e) {
     showError('Scan failed: ' + e.message);
@@ -267,10 +278,85 @@ async function revoke(id) {
   }
 }
 
-// Auto-restore session
+async function lookupWallet() {
+  const addr = $('lookupAddr').value.trim();
+  if (!addr) return showError('Paste a Solana address first');
+
+  $('cards').style.display = 'grid';
+  $('content').innerHTML = '<div class="loading"><span class="spinner"></span> Scanning on-chain data…</div>';
+
+  try {
+    const res = await fetch(`/api/approvals/lookup?address=${encodeURIComponent(addr)}`);
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Lookup failed'); }
+    const data = await res.json();
+    renderLookup(data);
+  } catch (e) {
+    showError(e.message);
+    $('content').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Lookup failed. Check the address.</p></div>';
+  }
+}
+
+function renderLookup(data) {
+  setScore(data.walletScore);
+  $('approvalCount').textContent = data.approvals.length;
+
+  let html = '';
+
+  // Token balances
+  if (data.balances && data.balances.length > 0) {
+    const totalUsd = data.balances.reduce((s, b) => s + (b.usdValue || 0), 0);
+    html += `<div class="section-title">Token Balances${totalUsd > 0 ? ` — Total: $${totalUsd.toFixed(2)}` : ''}</div>`;
+    html += '<table><thead><tr><th>Token</th><th style="text-align:right">Balance</th><th style="text-align:right">USD Value</th></tr></thead><tbody>';
+    for (const b of data.balances) {
+      const fmtBal = typeof b.balance === 'number' ? b.balance.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 4}) : b.balance;
+      const fmtUsd = b.usdValue != null ? `$${b.usdValue.toFixed(2)}` : '<span style="color:#444">—</span>';
+      html += `<tr>
+        <td>${b.icon ? `<img src="${b.icon}" width="20" height="20" style="border-radius:50%;vertical-align:middle;margin-right:8px" onerror="this.style.display='none'">` : '<span style="display:inline-block;width:20px;height:20px;margin-right:8px"></span>'}${b.symbol}</td>
+        <td style="text-align:right;font-family:monospace;color:#ccc">${fmtBal}</td>
+        <td style="text-align:right;font-family:monospace;${b.usdValue > 0 ? 'color:#00d4aa' : ''}">${fmtUsd}</td>
+      </tr>`;
+    }
+    html += '</tbody></table><br>';
+  }
+
+  // Approvals
+  if (data.approvals.length > 0) {
+    const riskOrder = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+    const worst = data.approvals.reduce((a, b) => (riskOrder[b.riskLevel] || 0) > (riskOrder[a.riskLevel] || 0) ? b : a);
+    $('highestRisk').innerHTML = `<span class="badge badge-${worst.riskLevel}">${worst.riskLevel}</span>`;
+
+    html += '<div class="section-title">Active Approvals</div><table><thead><tr><th>Token</th><th>Spender</th><th>Amount</th><th>Risk</th></tr></thead><tbody>';
+    for (const a of data.approvals) {
+      html += `<tr>
+        <td>${a.tokenIcon ? `<img src="${a.tokenIcon}" width="16" height="16" style="border-radius:50%;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}${a.tokenSymbol || short(a.tokenMint)}</td>
+        <td class="addr">${short(a.spender)}</td>
+        <td>${a.isUnlimited ? '<span style="color:#ff6644">♾️ Unlimited</span>' : a.amount}</td>
+        <td><span class="badge badge-${a.riskLevel}">${a.riskLevel}</span></td>
+      </tr>`;
+    }
+    html += '</tbody></table>';
+  } else {
+    $('highestRisk').textContent = '—';
+    $('highestRisk').className = 'card-value score-good';
+    html += `<div class="empty-state"><div class="icon">✅</div><p>No active approvals found. This wallet looks clean!</p></div>`;
+  }
+
+  if (!data.balances?.length && !data.approvals.length) {
+    html = `<div class="empty-state"><div class="icon">📭</div><p>No tokens or approvals found. Wallet may be empty.</p></div>`;
+  }
+
+  $('content').innerHTML = html;
+}
+
+// Auto-restore session — silently clear if JWT is expired
 if (jwt && walletAddr) {
-  showConnected();
-  loadApprovals();
+  // Test if JWT is still valid before showing connected state
+  fetch('/api/approvals', { headers: { 'Authorization': 'Bearer ' + jwt } })
+    .then(r => {
+      if (r.ok) { showConnected(); loadApprovals(); }
+      else { localStorage.removeItem('shieldfi_jwt'); localStorage.removeItem('shieldfi_wallet'); jwt = null; walletAddr = null; }
+    })
+    .catch(() => { localStorage.removeItem('shieldfi_jwt'); localStorage.removeItem('shieldfi_wallet'); jwt = null; walletAddr = null; });
 }
 </script>
 </body>

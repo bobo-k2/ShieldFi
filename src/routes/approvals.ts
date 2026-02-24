@@ -4,8 +4,27 @@ import { createRevokeInstruction, TOKEN_PROGRAM_ID, getAssociatedTokenAddress } 
 import { prisma } from '../db.js';
 import { env } from '../env.js';
 import { requireAuth } from '../middleware/auth.js';
-import { scanWalletApprovals } from '../services/scanner.js';
+import { scanWalletApprovals, lookupWalletApprovals } from '../services/scanner.js';
 
+// Public routes — no auth
+export async function approvalPublicRoutes(app: FastifyInstance) {
+  app.get<{ Querystring: { address: string } }>('/api/approvals/lookup', async (request, reply) => {
+    try {
+      const { address } = request.query;
+      if (!address) return reply.status(400).send({ error: 'address query param required' });
+      
+      try { new PublicKey(address); } catch { return reply.status(400).send({ error: 'Invalid Solana address' }); }
+
+      const results = await lookupWalletApprovals(address);
+      return { address, approvals: results.approvals, balances: results.balances, walletScore: results.walletScore };
+    } catch (err: any) {
+      app.log.error(err);
+      return reply.status(500).send({ error: 'Lookup failed: ' + err.message });
+    }
+  });
+}
+
+// Protected routes — auth required
 export async function approvalRoutes(app: FastifyInstance) {
   app.addHook('onRequest', requireAuth);
 
@@ -40,24 +59,14 @@ export async function approvalRoutes(app: FastifyInstance) {
       // Scan all wallets for this user
       const wallets = await prisma.wallet.findMany({ where: { userId: sub } });
       let allApprovals: any[] = [];
+      let walletScore = 0;
       for (const w of wallets) {
         const results = await scanWalletApprovals(w.address);
-        allApprovals.push(...results);
+        allApprovals.push(...results.approvals);
+        walletScore = Math.max(walletScore, results.walletScore);
       }
 
-      // Get latest risk score
-      const walletIds = wallets.map((w) => w.id);
-      const riskScores = await prisma.riskScore.findMany({
-        where: { walletId: { in: walletIds } },
-        orderBy: { calculatedAt: 'desc' },
-        take: 1,
-      });
-
-      return {
-        scanned: true,
-        approvals: allApprovals,
-        walletScore: riskScores[0]?.score ?? 0,
-      };
+      return { scanned: true, approvals: allApprovals, walletScore };
     } catch (err: any) {
       app.log.error(err);
       return reply.status(500).send({ error: 'Scan failed: ' + err.message });

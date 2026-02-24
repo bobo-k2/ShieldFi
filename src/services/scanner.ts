@@ -6,8 +6,25 @@ import { scoreApproval } from './risk.js';
 
 const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
 
-async function fetchTokenMetadata(mint: string): Promise<{ symbol?: string; icon?: string }> {
-  if (!env.HELIUS_API_KEY) return {};
+interface TokenMeta {
+  symbol?: string;
+  icon?: string;
+  decimals: number;
+  priceUsd?: number;
+}
+
+// In-memory metadata cache (survives across requests, cleared on restart)
+const metaCache = new Map<string, TokenMeta>();
+
+async function fetchTokenMetadataBatch(mints: string[]): Promise<Map<string, TokenMeta>> {
+  const results = new Map<string, TokenMeta>();
+  const uncached = mints.filter(m => {
+    if (metaCache.has(m)) { results.set(m, metaCache.get(m)!); return false; }
+    return true;
+  });
+
+  if (!uncached.length || !env.HELIUS_API_KEY) return results;
+
   try {
     const res = await fetch(`https://mainnet.helius-rpc.com/?api-key=${env.HELIUS_API_KEY}`, {
       method: 'POST',
@@ -15,18 +32,60 @@ async function fetchTokenMetadata(mint: string): Promise<{ symbol?: string; icon
       body: JSON.stringify({
         jsonrpc: '2.0',
         id: '1',
-        method: 'getAsset',
-        params: { id: mint },
+        method: 'getAssetBatch',
+        params: { ids: uncached },
       }),
     });
     const json = await res.json() as any;
-    const content = json?.result?.content;
-    const symbol = content?.metadata?.symbol || json?.result?.token_info?.symbol;
-    const icon = content?.links?.image || content?.files?.[0]?.uri;
-    return { symbol: symbol || undefined, icon: icon || undefined };
+    const assets = json?.result || [];
+    for (const asset of assets) {
+      const id = asset?.id;
+      if (!id) continue;
+      const content = asset?.content;
+      const tokenInfo = asset?.token_info || {};
+      const symbol = content?.metadata?.symbol || tokenInfo?.symbol;
+      const icon = content?.links?.image || content?.files?.[0]?.uri;
+      const decimals = tokenInfo?.decimals ?? 0;
+      const priceUsd = tokenInfo?.price_info?.price_per_token;
+      const meta: TokenMeta = { symbol: symbol || undefined, icon: icon || undefined, decimals, priceUsd };
+      metaCache.set(id, meta);
+      results.set(id, meta);
+    }
   } catch {
-    return {};
+    // Silently fail
   }
+
+  for (const m of uncached) {
+    if (!results.has(m)) {
+      const empty: TokenMeta = { decimals: 0 };
+      metaCache.set(m, empty);
+      results.set(m, empty);
+    }
+  }
+
+  // Fallback: fetch prices from Jupiter for tokens missing price
+  const needPrice = [...results.entries()].filter(([_, m]) => m.priceUsd == null).map(([id]) => id);
+  if (needPrice.length > 0) {
+    try {
+      const ids = needPrice.join(',');
+      const res = await fetch(`https://api.jup.ag/price/v2?ids=${ids}`);
+      const json = await res.json() as any;
+      const prices = json?.data || {};
+      for (const mint of needPrice) {
+        const price = prices[mint]?.price;
+        if (price != null) {
+          const existing = results.get(mint)!;
+          existing.priceUsd = parseFloat(price);
+          results.set(mint, existing);
+          metaCache.set(mint, existing);
+        }
+      }
+    } catch {
+      // Jupiter API failed — no prices, that's ok
+    }
+  }
+
+  return results;
 }
 
 async function scanTokenProgram(
@@ -80,28 +139,108 @@ async function scanTokenProgram(
   return approvals;
 }
 
+// Public lookup — no DB, returns raw results
+export async function lookupWalletApprovals(walletAddress: string) {
+  const connection = new Connection(env.SOLANA_RPC_URL, 'confirmed');
+  const owner = new PublicKey(walletAddress);
+
+  // Step 1: Collect all token accounts (one RPC call per program)
+  const rawApprovals: { mint: string; spender: string; delegatedAmount: string; balance: string; isUnlimited: boolean }[] = [];
+  const rawBalances: { mint: string; balance: string }[] = [];
+
+  for (const programId of [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID]) {
+    const tokenAccounts = await connection.getTokenAccountsByOwner(owner, { programId });
+    for (const { account } of tokenAccounts.value) {
+      const data = AccountLayout.decode(account.data);
+      const mint = new PublicKey(data.mint).toBase58();
+      const balance = data.amount.toString();
+
+      if (BigInt(balance) > 0n) {
+        rawBalances.push({ mint, balance });
+      }
+
+      if (data.delegateOption === 1) {
+        rawApprovals.push({
+          mint,
+          spender: new PublicKey(data.delegate).toBase58(),
+          delegatedAmount: data.delegatedAmount.toString(),
+          balance,
+          isUnlimited: BigInt(data.delegatedAmount.toString()) >= BigInt('18446744073709551615'),
+        });
+      }
+    }
+  }
+
+  // Step 2: Batch-fetch metadata for ALL unique mints in ONE call
+  const allMints = [...new Set([...rawApprovals.map(a => a.mint), ...rawBalances.map(b => b.mint)])];
+  const metaMap = await fetchTokenMetadataBatch(allMints);
+
+  // Step 3: Build results with metadata
+  const approvals = rawApprovals.map(a => {
+    const risk = scoreApproval({ amount: a.delegatedAmount, balance: a.balance, isUnlimited: a.isUnlimited, grantedAt: null });
+    const meta = metaMap.get(a.mint) || {};
+    return {
+      tokenMint: a.mint,
+      tokenSymbol: meta.symbol || null,
+      tokenIcon: meta.icon || null,
+      spender: a.spender,
+      amount: a.delegatedAmount,
+      balance: a.balance,
+      isUnlimited: a.isUnlimited,
+      riskLevel: risk.level,
+      riskFlags: risk.flags,
+      riskScore: risk.score,
+    };
+  });
+
+  const balances = rawBalances.map(b => {
+    const meta = metaMap.get(b.mint) || { decimals: 0 };
+    const rawBal = BigInt(b.balance);
+    const decimals = meta.decimals || 0;
+    const humanBalance = Number(rawBal) / Math.pow(10, decimals);
+    const usdValue = meta.priceUsd ? humanBalance * meta.priceUsd : null;
+    return {
+      mint: b.mint,
+      symbol: meta.symbol || b.mint.slice(0, 6),
+      icon: meta.icon || null,
+      rawBalance: b.balance,
+      balance: humanBalance,
+      decimals,
+      usdValue,
+    };
+  }).sort((a, b) => (b.usdValue || 0) - (a.usdValue || 0));
+
+  const { scoreWallet } = await import('./risk.js');
+  const walletScore = approvals.length > 0
+    ? scoreWallet(approvals.map(a => ({ level: a.riskLevel, score: a.riskScore, flags: a.riskFlags }))).score
+    : 0;
+
+  return { approvals, balances, walletScore };
+}
+
 export async function scanWalletApprovals(walletAddress: string) {
   const connection = new Connection(env.SOLANA_RPC_URL, 'confirmed');
   const owner = new PublicKey(walletAddress);
 
   const wallet = await prisma.wallet.findUnique({ where: { address: walletAddress } });
-  if (!wallet) return [];
+  if (!wallet) return { approvals: [], walletScore: 0 };
 
-  // Remove stale approvals before re-scan
   const spl = await scanTokenProgram(connection, owner, TOKEN_PROGRAM_ID, wallet.id);
   const t22 = await scanTokenProgram(connection, owner, TOKEN_2022_PROGRAM_ID, wallet.id);
 
   const allApprovals = [...spl, ...t22];
 
   // Store wallet risk score
+  const { scoreWallet } = await import('./risk.js');
+  let walletScore = 0;
   if (allApprovals.length > 0) {
-    const { scoreWallet } = await import('./risk.js');
     const risks = allApprovals.map((a) => ({
       level: a.riskLevel as any,
       score: a.riskLevel === 'CRITICAL' ? 90 : a.riskLevel === 'HIGH' ? 75 : a.riskLevel === 'MEDIUM' ? 50 : 25,
       flags: JSON.parse(a.riskFlags),
     }));
     const walletRisk = scoreWallet(risks);
+    walletScore = walletRisk.score;
     await prisma.riskScore.create({
       data: { walletId: wallet.id, score: walletRisk.score, breakdown: JSON.stringify(walletRisk) },
     });
@@ -111,5 +250,5 @@ export async function scanWalletApprovals(walletAddress: string) {
     });
   }
 
-  return allApprovals;
+  return { approvals: allApprovals, walletScore };
 }
