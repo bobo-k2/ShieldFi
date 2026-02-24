@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  primaryWallet String    @unique
+  nonce         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  wallets    Wallet[]
+  alerts     Alert[]
+
+  @@map("users")
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String
+  address   String   @unique
+  label     String?
+  createdAt DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approvals  Approval[]
+  riskScores RiskScore[]
+  alerts     Alert[]
+
+  @@map("wallets")
+}
+
+model Approval {
+  id          String   @id @default(cuid())
+  walletId    String
+  tokenMint   String
+  tokenSymbol String?
+  tokenIcon   String?
+  spender     String
+  amount      String
+  isUnlimited Boolean  @default(false)
+  riskLevel   String   @default("LOW")
+  riskFlags   String   @default("[]")
+  grantedAt   DateTime?
+  lastScanned DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@unique([walletId, tokenMint, spender])
+  @@map("approvals")
+}
+
+model RiskScore {
+  id           String   @id @default(cuid())
+  walletId     String
+  score        Int
+  breakdown    String   @default("{}")
+  calculatedAt DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("risk_scores")
+}
+
+model Alert {
+  id        String   @id @default(cuid())
+  userId    String
+  walletId  String
+  type      String
+  severity  String
+  title     String
+  message   String
+  metadata  String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("alerts")
+}

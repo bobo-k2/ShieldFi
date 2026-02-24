@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShieldFi Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; padding: 2rem; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+  h1 { font-size: 1.5rem; color: #00d4aa; }
+  .btn { padding: 10px 20px; background: #00d4aa; color: #000; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .btn:hover { opacity: 0.9; }
+  .btn-danger { background: #ff4444; color: #fff; padding: 6px 12px; font-size: 0.8rem; }
+  .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+  #status { color: #888; font-size: 0.9rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  th, td { padding: 12px; text-align: left; border-bottom: 1px solid #1a1a2f; }
+  th { color: #888; font-size: 0.85rem; text-transform: uppercase; }
+  .risk-LOW { color: #00d4aa; }
+  .risk-MEDIUM { color: #ffaa00; }
+  .risk-HIGH { color: #ff6644; }
+  .risk-CRITICAL { color: #ff0044; font-weight: bold; }
+  .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+  .badge-LOW { background: #00d4aa22; color: #00d4aa; }
+  .badge-MEDIUM { background: #ffaa0022; color: #ffaa00; }
+  .badge-HIGH { background: #ff664422; color: #ff6644; }
+  .badge-CRITICAL { background: #ff004422; color: #ff0044; }
+  .empty { text-align: center; padding: 3rem; color: #555; }
+  .addr { font-family: monospace; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🛡️ ShieldFi Dashboard</h1>
+  <div>
+    <span id="status">Not connected</span>
+    <button class="btn" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+    <button class="btn btn-sm" id="scanBtn" onclick="scanApprovals()" style="display:none">🔍 Scan Now</button>
+  </div>
+</div>
+<div id="content">
+  <div class="empty">Connect your wallet to view approvals</div>
+</div>
+
+<script>
+const API = '';
+let jwt = null;
+let wallet = null;
+
+function short(addr) { return addr.slice(0, 4) + '...' + addr.slice(-4); }
+
+async function connectWallet() {
+  const provider = window.phantom?.solana || window.solana;
+  if (!provider?.isPhantom) { alert('Please install Phantom wallet'); return; }
+
+  try {
+    const resp = await provider.connect();
+    wallet = resp.publicKey.toString();
+    document.getElementById('status').textContent = short(wallet);
+
+    // Get nonce
+    const nonceRes = await fetch(API + '/api/auth/nonce', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet }),
+    });
+    const { nonce } = await nonceRes.json();
+
+    // Sign
+    const message = new TextEncoder().encode(
+      `Sign this message to authenticate with ShieldFi.\n\nNonce: ${nonce}`
+    );
+    const { signature } = await provider.signMessage(message, 'utf8');
+    const sig = btoa(String.fromCharCode(...signature));
+    // We need bs58 encoding — use a simple encoder
+    const bs58sig = await toBase58(signature);
+
+    // Verify
+    const verifyRes = await fetch(API + '/api/auth/verify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet, signature: bs58sig, nonce }),
+    });
+    const data = await verifyRes.json();
+    if (data.token) {
+      jwt = data.token;
+      document.getElementById('scanBtn').style.display = 'inline-block';
+      document.getElementById('connectBtn').textContent = 'Connected ✓';
+      loadApprovals();
+    } else {
+      alert('Auth failed: ' + (data.error || 'Unknown'));
+    }
+  } catch (e) { console.error(e); alert('Connection failed'); }
+}
+
+async function loadApprovals() {
+  const res = await fetch(API + '/api/approvals', { headers: { Authorization: 'Bearer ' + jwt } });
+  const approvals = await res.json();
+  if (!approvals.length) {
+    document.getElementById('content').innerHTML = '<div class="empty">No approvals found. Click "Scan Now" to check your wallet.</div>';
+    return;
+  }
+  let html = '<table><thead><tr><th>Token</th><th>Spender</th><th>Amount</th><th>Risk</th><th>Action</th></tr></thead><tbody>';
+  for (const a of approvals) {
+    html += `<tr>
+      <td class="addr">${short(a.tokenMint)}</td>
+      <td class="addr">${short(a.spender)}</td>
+      <td>${a.isUnlimited ? '♾️ Unlimited' : a.amount}</td>
+      <td><span class="badge badge-${a.riskLevel}">${a.riskLevel}</span></td>
+      <td><button class="btn btn-danger" onclick="revokeApproval('${a.id}')">Revoke</button></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('content').innerHTML = html;
+}
+
+async function scanApprovals() {
+  document.getElementById('scanBtn').textContent = '⏳ Scanning...';
+  await fetch(API + '/api/approvals/scan', { method: 'POST', headers: { Authorization: 'Bearer ' + jwt } });
+  document.getElementById('scanBtn').textContent = '🔍 Scan Now';
+  loadApprovals();
+}
+
+async function revokeApproval(id) {
+  const res = await fetch(API + '/api/approvals/' + id + '/revoke', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + jwt },
+  });
+  const data = await res.json();
+  alert('Revoke info: ' + JSON.stringify(data));
+}
+
+// Minimal base58 encoder
+function toBase58(bytes) {
+  const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  let result = '';
+  let num = 0n;
+  for (const b of bytes) num = num * 256n + BigInt(b);
+  while (num > 0n) { result = ALPHABET[Number(num % 58n)] + result; num = num / 58n; }
+  for (const b of bytes) { if (b !== 0) break; result = '1' + result; }
+  return result;
+}
+</script>
+</body>
+</html>
