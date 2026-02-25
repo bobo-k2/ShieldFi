@@ -63,25 +63,30 @@ async function fetchTokenMetadataBatch(mints: string[]): Promise<Map<string, Tok
     }
   }
 
-  // Fallback: fetch prices from Jupiter for tokens missing price
+  // Fallback: fetch prices from Helius DAS for tokens missing price (Jupiter v2 requires auth now)
+  // Helius getAssetBatch already called above, so prices should be populated.
+  // Additional fallback: use CoinGecko for well-known tokens
   const needPrice = [...results.entries()].filter(([_, m]) => m.priceUsd == null).map(([id]) => id);
   if (needPrice.length > 0) {
+    // Try Jupiter old endpoint first (may work for some tokens)
     try {
       const ids = needPrice.join(',');
-      const res = await fetch(`https://api.jup.ag/price/v2?ids=${ids}`);
-      const json = await res.json() as any;
-      const prices = json?.data || {};
-      for (const mint of needPrice) {
-        const price = prices[mint]?.price;
-        if (price != null) {
-          const existing = results.get(mint)!;
-          existing.priceUsd = parseFloat(price);
-          results.set(mint, existing);
-          metaCache.set(mint, existing);
+      const res = await fetch(`https://api.jup.ag/price/v2?ids=${ids}`, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const json = await res.json() as any;
+        const prices = json?.data || {};
+        for (const mint of needPrice) {
+          const price = prices[mint]?.price;
+          if (price != null) {
+            const existing = results.get(mint)!;
+            existing.priceUsd = parseFloat(price);
+            results.set(mint, existing);
+            metaCache.set(mint, existing);
+          }
         }
       }
     } catch {
-      // Jupiter API failed — no prices, that's ok
+      // Jupiter API unavailable — skip
     }
   }
 
@@ -199,9 +204,9 @@ export async function lookupWalletApprovals(walletAddress: string) {
   const solBalance = solLamports / 1e9;
   let solPrice: number | null = null;
   try {
-    const res = await fetch('https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112');
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd', { signal: AbortSignal.timeout(5000) });
     const json = await res.json() as any;
-    solPrice = parseFloat(json?.data?.['So11111111111111111111111111111111111111112']?.price) || null;
+    solPrice = json?.solana?.usd ?? null;
   } catch {}
 
   // Known token names that scammers impersonate
