@@ -149,8 +149,8 @@
   <div class="nav-right">
     <span class="wallet-pill" id="walletDisplay" style="display:none" onclick="copyAddr(this.dataset.full)" title="Click to copy"></span>
     <button class="btn btn-sm" id="connectBtn" onclick="connect()">Connect Wallet</button>
+    <button class="btn btn-sm" id="disconnectBtn" onclick="disconnect()" style="display:none;background:#ff4444">Disconnect</button>
     <button class="btn btn-sm btn-outline" id="scanBtn" onclick="scan()" style="display:none">🔍 Scan</button>
-    <button class="btn btn-sm btn-outline" id="disconnectBtn" onclick="disconnect()" style="display:none;border-color:#ff4444;color:#ff4444">Disconnect</button>
   </div>
 </nav>
 
@@ -328,10 +328,9 @@ function showConnected(){
   wd.textContent='🟢 '+short(walletAddr);
   wd.dataset.full=walletAddr;
   wd.style.display='inline-block';
-  $('connectBtn').textContent='✓ Connected';
-  $('connectBtn').disabled=true;
-  $('scanBtn').style.display='inline-flex';
+  $('connectBtn').style.display='none';
   $('disconnectBtn').style.display='inline-flex';
+  $('scanBtn').style.display='inline-flex';
 }
 
 function disconnect(){
@@ -343,6 +342,7 @@ function disconnect(){
   try{(window.phantom?.solana||window.solana)?.disconnect()}catch{}
   // Reset UI
   $('walletDisplay').style.display='none';
+  $('connectBtn').style.display='inline-flex';
   $('connectBtn').textContent='Connect Wallet';
   $('connectBtn').disabled=false;
   $('scanBtn').style.display='none';
