@@ -14,6 +14,7 @@ import { alertRoutes } from './routes/alerts.js';
 import { webhookRoutes } from './routes/webhooks.js';
 import { monitorRoutes } from './routes/monitor.js';
 import { monitorManager } from './services/monitorManager.js';
+import { transactionRoutes } from './routes/transactions.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +35,7 @@ await app.register(approvalRoutes);
 await app.register(alertRoutes);
 await app.register(webhookRoutes);
 await app.register(monitorRoutes);
+await app.register(transactionRoutes);
 
 app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
   if (err) {

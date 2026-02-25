@@ -31,7 +31,7 @@ export async function webhookRoutes(app: FastifyInstance) {
         });
 
         for (const wallet of monitoredWallets) {
-          const alerts = analyzeTransaction(tx, wallet.address);
+          const alerts = await analyzeTransaction(tx, wallet.address);
           for (const alert of alerts) {
             await prisma.monitorAlert.create({
               data: {

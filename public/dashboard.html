@@ -380,6 +380,71 @@ function renderLookup(data) {
   }
 
   $('content').innerHTML = html;
+
+  // Auto-load transactions
+  const txAddr = $('lookupAddr').value.trim();
+  if (txAddr) loadTransactions(txAddr);
+}
+
+const TX_TYPE_COLORS = {
+  SWAP: '#7b61ff', TRANSFER: '#00d4aa', NFT_SALE: '#ff6644', NFT_MINT: '#ffaa00',
+  NFT_LISTING: '#ff8844', BURN: '#ff4444', STAKE: '#44aaff', UNSTAKE: '#4488ff',
+  COMPRESSED_NFT_MINT: '#ffaa00', TOKEN_MINT: '#44ddaa', UNKNOWN: '#555',
+};
+
+async function loadTransactions(addr) {
+  const container = document.createElement('div');
+  container.id = 'txSection';
+  container.innerHTML = '<div class="section-title" style="margin-top:1.5rem">📜 Recent Activity</div><div class="loading"><span class="spinner"></span> Loading transactions…</div>';
+  $('content').appendChild(container);
+
+  try {
+    const res = await fetch(`/api/transactions/${encodeURIComponent(addr)}?limit=20`);
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    const txs = data.transactions || [];
+
+    if (!txs.length) {
+      container.innerHTML = '<div class="section-title" style="margin-top:1.5rem">📜 Recent Activity</div><div style="color:#555;text-align:center;padding:1rem;">No recent transactions found.</div>';
+      return;
+    }
+
+    let html = '<div class="section-title" style="margin-top:1.5rem">📜 Recent Activity</div>';
+    for (const tx of txs) {
+      const type = tx.type || 'UNKNOWN';
+      const color = TX_TYPE_COLORS[type] || TX_TYPE_COLORS.UNKNOWN;
+      const time = tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleString() : '—';
+      const desc = tx.description || 'No description';
+      const sig = tx.signature || '';
+
+      // Token transfers summary
+      let transfers = '';
+      if (tx.tokenTransfers && tx.tokenTransfers.length > 0) {
+        const parts = tx.tokenTransfers.slice(0, 3).map(t => {
+          const amt = t.tokenAmount != null ? parseFloat(t.tokenAmount).toLocaleString(undefined, {maximumFractionDigits:4}) : '?';
+          const sym = t.mint ? t.mint.slice(0,4) + '…' : '';
+          return `<span style="color:#ccc;font-family:monospace;font-size:0.8rem">${amt} ${sym}</span>`;
+        });
+        transfers = parts.join(' · ');
+      }
+      if (tx.nativeTransfers && tx.nativeTransfers.length > 0 && !transfers) {
+        const total = tx.nativeTransfers.reduce((s, t) => s + Math.abs(t.amount || 0), 0) / 1e9;
+        if (total > 0) transfers = `<span style="color:#ccc;font-family:monospace;font-size:0.8rem">${total.toLocaleString(undefined,{maximumFractionDigits:4})} SOL</span>`;
+      }
+
+      html += `<div style="padding:0.75rem;background:#111118;border:1px solid #1a1a2e;border-left:3px solid ${color};border-radius:6px;margin-bottom:0.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+          <div><span class="badge" style="background:${color}22;color:${color}">${type}</span> <span style="font-size:0.85rem;color:#aaa;margin-left:6px;">${desc.length > 100 ? desc.slice(0,100)+'…' : desc}</span></div>
+          <span style="font-size:0.75rem;color:#555;">${time}</span>
+        </div>
+        ${transfers ? `<div style="margin-top:4px;">${transfers}</div>` : ''}
+        ${sig ? `<a href="https://solscan.io/tx/${sig}" target="_blank" style="font-size:0.78rem;color:#7b61ff;">View on Solscan →</a>` : ''}
+      </div>`;
+    }
+    container.innerHTML = html;
+  } catch {
+    container.innerHTML = '<div class="section-title" style="margin-top:1.5rem">📜 Recent Activity</div><div style="color:#555;text-align:center;padding:1rem;">Failed to load transactions.</div>';
+  }
 }
 
 // --- Monitoring ---

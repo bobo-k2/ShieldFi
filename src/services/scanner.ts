@@ -194,6 +194,16 @@ export async function lookupWalletApprovals(walletAddress: string) {
     };
   });
 
+  // Step 2b: Fetch SOL native balance
+  const solLamports = await connection.getBalance(owner);
+  const solBalance = solLamports / 1e9;
+  let solPrice: number | null = null;
+  try {
+    const res = await fetch('https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112');
+    const json = await res.json() as any;
+    solPrice = parseFloat(json?.data?.['So11111111111111111111111111111111111111112']?.price) || null;
+  } catch {}
+
   // Known token names that scammers impersonate
   const IMPERSONATED_NAMES = new Set(['SOL', 'ETH', 'BTC', 'USDC', 'USDT', 'BONK', 'JUP', 'WIF', 'PYTH', 'JTO', 'RNDR', 'HNT']);
   // Real mint addresses for common tokens
@@ -203,7 +213,19 @@ export async function lookupWalletApprovals(walletAddress: string) {
     'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
   ]);
 
-  const balances = rawBalances.map(b => {
+  const solEntry = {
+    mint: 'native' as const,
+    symbol: 'SOL',
+    icon: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
+    rawBalance: solLamports.toString(),
+    balance: solBalance,
+    decimals: 9,
+    usdValue: solPrice ? solBalance * solPrice : null,
+    status: 'verified' as const,
+    flags: [] as string[],
+  };
+
+  const balances = [solEntry, ...rawBalances.map(b => {
     const meta = metaMap.get(b.mint) || { decimals: 0 };
     const rawBal = BigInt(b.balance);
     const decimals = meta.decimals || 0;
@@ -247,7 +269,7 @@ export async function lookupWalletApprovals(walletAddress: string) {
     const order = { verified: 0, unknown: 1, suspicious: 2 };
     if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
     return (b.usdValue || 0) - (a.usdValue || 0);
-  });
+  })];
 
   const { scoreWallet } = await import('./risk.js');
   const walletScore = approvals.length > 0
