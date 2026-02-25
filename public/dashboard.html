@@ -150,6 +150,7 @@
     <span class="wallet-pill" id="walletDisplay" style="display:none" onclick="copyAddr(this.dataset.full)" title="Click to copy"></span>
     <button class="btn btn-sm" id="connectBtn" onclick="connect()">Connect Wallet</button>
     <button class="btn btn-sm btn-outline" id="scanBtn" onclick="scan()" style="display:none">🔍 Scan</button>
+    <button class="btn btn-sm btn-outline" id="disconnectBtn" onclick="disconnect()" style="display:none;border-color:#ff4444;color:#ff4444">Disconnect</button>
   </div>
 </nav>
 
@@ -330,6 +331,27 @@ function showConnected(){
   $('connectBtn').textContent='✓ Connected';
   $('connectBtn').disabled=true;
   $('scanBtn').style.display='inline-flex';
+  $('disconnectBtn').style.display='inline-flex';
+}
+
+function disconnect(){
+  // Clear local state
+  localStorage.removeItem('shieldfi_jwt');
+  localStorage.removeItem('shieldfi_wallet');
+  jwt=null;walletAddr=null;
+  // Try disconnecting Phantom
+  try{(window.phantom?.solana||window.solana)?.disconnect()}catch{}
+  // Reset UI
+  $('walletDisplay').style.display='none';
+  $('connectBtn').textContent='Connect Wallet';
+  $('connectBtn').disabled=false;
+  $('scanBtn').style.display='none';
+  $('disconnectBtn').style.display='none';
+  $('cards').style.display='none';
+  $('monitorSection').style.display='none';
+  $('riskAnalysis').style.display='none';
+  $('content').innerHTML='<div class="empty-state"><div class="empty-icon">🔌</div><p>Connect your Phantom wallet or paste any Solana address above to scan</p></div>';
+  toast('Wallet disconnected','info');
 }
 
 async function scan(){
