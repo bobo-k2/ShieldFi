@@ -58,8 +58,11 @@
   /* Section */
   .section{margin-bottom:2rem;animation:fadeUp .4s ease both}
   .section-title{font-size:.85rem;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
-  .section-title .caret{margin-left:auto;font-size:.75rem;color:#555;background:#1a1a2e;border:1px solid #252540;border-radius:6px;padding:2px 8px;transition:all .2s}
-  .section-title:hover .caret{color:#7b61ff;border-color:#7b61ff40}
+  .section-title .caret{margin-left:auto;background:#1a1a2e;border:1px solid #252540;border-radius:6px;padding:4px 8px;transition:all .2s;display:inline-flex;align-items:center}
+  .section-title .caret svg{width:14px;height:14px;stroke:#555;transition:transform .2s}
+  .section-title:hover .caret{border-color:#7b61ff40}
+  .section-title:hover .caret svg{stroke:#7b61ff}
+  .section-title .caret.collapsed svg{transform:rotate(-90deg)}
   .section-card{background:#111118;border:1px solid #1a1a2e;border-radius:14px;padding:1.5rem}
 
   /* Token grid */
@@ -262,6 +265,10 @@ function copyable(addr){
 }
 
 /* Skeleton loading */
+const CHEVRON_SVG='<svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+function toggleCollapse(el){const body=el.nextElementSibling;const caret=el.querySelector('.caret');if(body.style.display==='none'){body.style.display='block';caret.classList.remove('collapsed')}else{body.style.display='none';caret.classList.add('collapsed')}}
+function collapsibleTitle(title,extra=''){return `<div class="section-title" style="cursor:pointer;user-select:none" onclick="toggleCollapse(this)">${title}${extra} <span class="caret">${CHEVRON_SVG}</span></div><div>`}
+
 function showSkeleton(){
   $('cards').style.display='grid';
   $('riskLevel').textContent='⏳';$('tokenCount').textContent='…';$('suspiciousCount').textContent='…';
@@ -584,7 +591,7 @@ async function loadTransactions(addr){
       return;
     }
 
-    let html=`<div class="section-title" style="cursor:pointer;user-select:none" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.caret').textContent=this.nextElementSibling.style.display==='none'?'▸':'▾'">📜 Recent Activity (${txs.length}) <span class="caret">▾</span></div><div>`;
+    let html=collapsibleTitle('📜 Recent Activity',` (${txs.length})`);
     for(const tx of txs){
       const type=tx.type||'UNKNOWN';
       const color=TX_TYPE_COLORS[type]||TX_TYPE_COLORS.UNKNOWN;
@@ -754,7 +761,7 @@ function renderRiskAnalysis(data){
   const reports=data.tokenReports||[];
   if(!reports.length){$('tokenReports').innerHTML='<div style="color:#444;text-align:center;padding:1rem">No unknown/suspicious tokens to analyze.</div>';return}
 
-  let html=`<div class="section-title" style="margin-top:1rem;cursor:pointer;user-select:none" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.caret').textContent=this.nextElementSibling.style.display==='none'?'▸':'▾'">Token Risk Reports (${reports.length}) <span class="caret">▾</span></div><div>`;
+  let html=collapsibleTitle('Token Risk Reports',` (${reports.length})`);
   for(const r of reports){
     const c=levelColors[r.level]||'#888';
     const flagsHtml=r.flags.map(f=>{
@@ -777,7 +784,7 @@ function renderRiskAnalysis(data){
   html+='</div>'; // close token reports collapsible
   const spenderRisks=data.approvalRisks||[];
   if(spenderRisks.length>0){
-    html+=`<div class="section-title" style="margin-top:1.5rem;cursor:pointer;user-select:none" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.caret').textContent=this.nextElementSibling.style.display==='none'?'▸':'▾'">Spender Analysis (${spenderRisks.length}) <span class="caret">▾</span></div><div>`;
+    html+=collapsibleTitle('Spender Analysis',` (${spenderRisks.length})`);
     for(const s of spenderRisks){
       const sColor=s.isKnown?'#00d4aa':s.riskScore>20?'#ff6644':'#ffaa00';
       html+=`<div style="padding:.75rem;background:#0a0a0a;border:1px solid #151520;border-left:3px solid ${sColor};border-radius:10px;margin-bottom:.5rem">
