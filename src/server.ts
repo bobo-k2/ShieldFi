@@ -14,6 +14,7 @@ import { alertRoutes } from './routes/alerts.js';
 import { webhookRoutes } from './routes/webhooks.js';
 import { monitorRoutes } from './routes/monitor.js';
 import { monitorManager } from './services/monitorManager.js';
+import { startTelegramBot } from './services/telegramBot.js';
 import { transactionRoutes } from './routes/transactions.js';
 import { riskAnalysisRoutes } from './routes/risk-analysis.js';
 
@@ -48,4 +49,6 @@ app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
 
   // Start polling monitor
   monitorManager.start(30000);
+  // Start Telegram bot for /start link commands
+  startTelegramBot();
 });

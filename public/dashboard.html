@@ -185,6 +185,12 @@
         <span id="monitorStatus" style="font-size:.8rem"></span>
       </div>
       <button class="btn" id="monitorBtn" onclick="toggleMonitor()" style="width:100%">🔔 Start Monitoring</button>
+      <div id="telegramLink" style="display:none;margin-top:1rem;padding:1rem;background:#0a0a0a;border:1px solid #1a1a2e;border-radius:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+          <span id="telegramStatus" style="font-size:.85rem"></span>
+          <button class="btn btn-sm" id="telegramBtn" onclick="linkTelegram()">📱 Connect Telegram</button>
+        </div>
+      </div>
       <div id="monitorAlerts" style="margin-top:1rem"></div>
     </div>
   </div>
@@ -618,10 +624,22 @@ async function checkMonitorStatus(addr){
       $('monitorBtn').onclick=()=>stopMonitor(addr);
       $('monitorStatus').innerHTML='<span style="color:#00d4aa">🟢 Active</span>'+(data.lastCheckedAt?' — last: '+new Date(data.lastCheckedAt).toLocaleTimeString():'');
       loadMonitorAlerts(addr);
+      // Show Telegram link section
+      $('telegramLink').style.display='block';
+      if(data.telegramLinked){
+        $('telegramStatus').innerHTML='✅ <span style="color:#00d4aa">Telegram connected</span>';
+        $('telegramBtn').textContent='🔓 Unlink Telegram';
+        $('telegramBtn').onclick=()=>unlinkTelegram(addr);
+      }else{
+        $('telegramStatus').innerHTML='📭 <span style="color:#888">No Telegram linked — alerts won\'t be sent</span>';
+        $('telegramBtn').textContent='📱 Connect Telegram';
+        $('telegramBtn').onclick=()=>linkTelegram(addr);
+      }
     }else{
       $('monitorBtn').textContent='🔔 Start Monitoring';
       $('monitorBtn').onclick=()=>startMonitor(addr);
       $('monitorStatus').textContent='';$('monitorAlerts').innerHTML='';
+      $('telegramLink').style.display='none';
     }
   }catch{}
 }
@@ -660,6 +678,34 @@ async function loadMonitorAlerts(addr){
     }
     $('monitorAlerts').innerHTML=html;
   }catch{}
+}
+
+async function linkTelegram(addr){
+  try{
+    const res=await fetch('/api/monitor/telegram/link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:addr})});
+    const data=await res.json();
+    if(data.alreadyLinked){toast('Telegram already connected!','success');checkMonitorStatus(addr);return}
+    if(data.deepLink){
+      window.open(data.deepLink,'_blank');
+      toast('Opening Telegram bot — click Start to connect','info');
+      // Poll for completion
+      let checks=0;
+      const poll=setInterval(async()=>{
+        checks++;
+        if(checks>30){clearInterval(poll);return}
+        const r=await fetch(`/api/monitor/${encodeURIComponent(addr)}/status`);
+        const s=await r.json();
+        if(s.telegramLinked){clearInterval(poll);toast('Telegram connected!','success');checkMonitorStatus(addr)}
+      },3000);
+    }
+  }catch(e){showError('Failed to generate link: '+e.message)}
+}
+
+async function unlinkTelegram(addr){
+  try{
+    await fetch('/api/monitor/telegram/unlink',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:addr})});
+    toast('Telegram unlinked','info');checkMonitorStatus(addr);
+  }catch(e){showError('Failed to unlink: '+e.message)}
 }
 
 function toggleMonitor(){if(currentLookupAddr)startMonitor(currentLookupAddr)}

@@ -103,6 +103,9 @@ class MonitorManager {
           },
         });
 
+        // Send to wallet owner's Telegram if linked, otherwise fallback to global
+        const monWallet = await prisma.monitoredWallet.findUnique({ where: { id: walletId } });
+        const chatId = monWallet?.telegramChatId || undefined;
         await sendTelegramAlert({
           type: alert.type,
           severity: alert.severity,
@@ -110,7 +113,7 @@ class MonitorManager {
           message: alert.message,
           walletAddress: alert.walletAddress,
           txSignature: alert.txSignature,
-        });
+        }, chatId);
       } catch (e) {
         console.error('[MonitorManager] Failed to store/send alert:', e);
       }

@@ -87,13 +87,15 @@ model Alert {
 }
 
 model MonitoredWallet {
-  id            String    @id @default(cuid())
-  address       String    @unique
-  label         String?
-  lastSignature String?
-  lastCheckedAt DateTime?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
+  id              String    @id @default(cuid())
+  address         String    @unique
+  label           String?
+  telegramChatId  String?
+  linkCode        String?   @unique
+  lastSignature   String?
+  lastCheckedAt   DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
 
   monitorAlerts MonitorAlert[]
 
