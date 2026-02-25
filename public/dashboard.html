@@ -95,6 +95,18 @@
     <div id="monitorAlerts" style="margin-top:1rem;"></div>
   </div>
 
+  <div id="riskAnalysis" style="display:none; margin-bottom:2rem; padding:1.25rem; background:#111118; border:1px solid #1a1a2e; border-radius:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+      <div class="card-label">🤖 AI Risk Analysis</div>
+      <span id="riskAnalysisStatus" style="font-size:0.8rem; color:#555;"></span>
+    </div>
+    <button class="btn" id="riskAnalysisBtn" onclick="runRiskAnalysis()" style="width:100%">🔬 Run Deep Analysis</button>
+    <div id="riskSummary" style="display:none; margin-top:1rem; padding:1rem; background:#0a0a0a; border:1px solid #1a1a2e; border-radius:8px;">
+      <div id="riskSummaryText" style="font-size:0.95rem; line-height:1.6;"></div>
+    </div>
+    <div id="tokenReports" style="margin-top:1rem;"></div>
+  </div>
+
   <div id="content">
     <div class="empty-state">
       <div class="icon">🔌</div>
@@ -454,9 +466,11 @@ const origLookupWallet = lookupWallet;
 lookupWallet = async function() {
   const addr = $('lookupAddr').value.trim();
   currentLookupAddr = addr;
+  lastLookupAddr = addr;
   await origLookupWallet();
   if (addr) {
     $('monitorSection').style.display = 'block';
+    $('riskAnalysis').style.display = 'block';
     checkMonitorStatus(addr);
   }
 };
@@ -536,6 +550,109 @@ async function loadMonitorAlerts(addr) {
 
 function toggleMonitor() {
   if (currentLookupAddr) startMonitor(currentLookupAddr);
+}
+
+// --- Risk Analysis ---
+let lastLookupAddr = null;
+
+async function runRiskAnalysis() {
+  const addr = lastLookupAddr || $('lookupAddr').value.trim();
+  if (!addr) return showError('No wallet address to analyze');
+
+  const btn = $('riskAnalysisBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Analyzing tokens & contracts…';
+  $('riskAnalysisStatus').textContent = 'This may take 10-20 seconds…';
+  $('riskSummary').style.display = 'none';
+  $('tokenReports').innerHTML = '';
+
+  try {
+    const res = await fetch(`/api/risk/wallet?address=${encodeURIComponent(addr)}`);
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Analysis failed'); }
+    const data = await res.json();
+    renderRiskAnalysis(data);
+  } catch (e) {
+    showError('Risk analysis failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔬 Run Deep Analysis';
+    $('riskAnalysisStatus').textContent = '';
+  }
+}
+
+function renderRiskAnalysis(data) {
+  // Summary
+  const summaryEl = $('riskSummary');
+  summaryEl.style.display = 'block';
+  const levelColors = { SAFE: '#00d4aa', LOW: '#00d4aa', MEDIUM: '#ffaa00', HIGH: '#ff6644', CRITICAL: '#ff0044' };
+  const levelEmoji = { SAFE: '✅', LOW: '🟢', MEDIUM: '🟡', HIGH: '🟠', CRITICAL: '🔴' };
+  const color = levelColors[data.level] || '#888';
+
+  $('riskSummaryText').innerHTML = `
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+      <span style="font-size:1.8rem;">${levelEmoji[data.level] || '❓'}</span>
+      <div>
+        <div style="font-size:1.2rem; font-weight:700; color:${color};">Risk Level: ${data.level}</div>
+        <div style="font-size:0.85rem; color:#888;">Score: ${data.overallScore}/100 (lower is safer)</div>
+      </div>
+    </div>
+    <div style="color:#ccc; font-size:0.9rem;">${data.summary}</div>
+  `;
+
+  // Token reports
+  const reports = data.tokenReports || [];
+  if (reports.length === 0) {
+    $('tokenReports').innerHTML = '<div style="color:#555; text-align:center; padding:1rem;">No unknown/suspicious tokens to analyze.</div>';
+    return;
+  }
+
+  let html = '<div class="section-title" style="margin-top:1rem;">Token Risk Reports</div>';
+  for (const r of reports) {
+    const c = levelColors[r.level] || '#888';
+    const flagsHtml = r.flags.map(f => {
+      const sevColor = f.severity === 'danger' ? '#ff4444' : f.severity === 'warning' ? '#ffaa00' : '#555';
+      const sevIcon = f.severity === 'danger' ? '🔴' : f.severity === 'warning' ? '🟡' : 'ℹ️';
+      return `<div style="display:flex; align-items:center; gap:0.5rem; padding:4px 0; font-size:0.85rem;">
+        <span>${sevIcon}</span>
+        <span style="color:#aaa;">${f.signal}</span>
+        <span style="color:${sevColor}; font-size:0.75rem; margin-left:auto;">${f.category}</span>
+      </div>`;
+    }).join('');
+
+    const mintShort = r.mint.slice(0, 8) + '…' + r.mint.slice(-4);
+    html += `<div style="padding:1rem; background:#0a0a0a; border:1px solid #1a1a2e; border-left:3px solid ${c}; border-radius:8px; margin-bottom:0.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+        <span style="font-weight:600; color:#e0e0e0;">${r.symbol || mintShort}</span>
+        <span class="badge" style="background:${c}20; color:${c};">${r.level} (${r.overallScore})</span>
+      </div>
+      <div style="font-family:monospace; font-size:0.75rem; color:#555; margin-bottom:0.5rem;">
+        <a href="https://solscan.io/token/${r.mint}" target="_blank" style="color:#7b61ff;">${mintShort}</a>
+      </div>
+      ${r.metadata?.mintAuthority ? '<div style="font-size:0.8rem; color:#ff6644; margin-bottom:4px;">⚠️ Mint authority: ' + r.metadata.mintAuthority.slice(0,8) + '…</div>' : ''}
+      ${r.metadata?.freezeAuthority ? '<div style="font-size:0.8rem; color:#ffaa00; margin-bottom:4px;">❄️ Freeze authority: ' + r.metadata.freezeAuthority.slice(0,8) + '…</div>' : ''}
+      ${flagsHtml}
+    </div>`;
+  }
+
+  // Approval/spender risks
+  const spenderRisks = data.approvalRisks || [];
+  if (spenderRisks.length > 0) {
+    html += '<div class="section-title" style="margin-top:1.5rem;">Spender Analysis</div>';
+    for (const s of spenderRisks) {
+      const sColor = s.isKnown ? '#00d4aa' : s.riskScore > 20 ? '#ff6644' : '#ffaa00';
+      html += `<div style="padding:0.75rem; background:#0a0a0a; border:1px solid #1a1a2e; border-left:3px solid ${sColor}; border-radius:8px; margin-bottom:0.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-family:monospace; font-size:0.85rem; color:#aaa;">
+            <a href="https://solscan.io/account/${s.spender}" target="_blank" style="color:#7b61ff;">${s.spender.slice(0,8)}…${s.spender.slice(-4)}</a>
+          </span>
+          <span style="font-size:0.85rem; color:${sColor};">${s.isKnown ? '✅ Known DeFi' : s.label || 'Unknown'}</span>
+        </div>
+        ${s.flags.map(f => `<div style="font-size:0.8rem; color:#888; margin-top:4px;">${f.severity === 'danger' ? '🔴' : '🟡'} ${f.signal}</div>`).join('')}
+      </div>`;
+    }
+  }
+
+  $('tokenReports').innerHTML = html;
 }
 
 // Auto-restore session — silently clear if JWT is expired
