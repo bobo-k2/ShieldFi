@@ -59,6 +59,10 @@
   /* Section */
   .section{margin-bottom:2rem;animation:fadeUp .4s ease both}
   .section-title{font-size:.85rem;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+  .info-icon{cursor:pointer;font-size:.7rem;opacity:.6;transition:opacity .2s;vertical-align:middle}
+  .info-icon:hover{opacity:1}
+  .info-popup{position:absolute;top:100%;left:0;right:0;margin-top:6px;background:#111118;border:1px solid #252540;border-radius:10px;padding:.75rem;z-index:50;color:#999;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  .stat-card{position:relative}
   .section-title .caret{margin-left:auto;background:#1a1a2e;border:1px solid #252540;border-radius:6px;padding:4px 8px;transition:all .2s;display:inline-flex;align-items:center}
   .section-title .caret svg{width:14px;height:14px;stroke:#555;transition:transform .2s}
   .section-title:hover .caret{border-color:#7b61ff40}
@@ -189,7 +193,18 @@
 
   <!-- Stat Cards -->
   <div class="stat-cards" id="cards" style="display:none">
-    <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('riskAnalysis')?.scrollIntoView({behavior:'smooth',block:'start'})"><div class="stat-label">Risk Level</div><div class="stat-value" id="riskLevel">—</div></div>
+    <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('riskAnalysis')?.scrollIntoView({behavior:'smooth',block:'start'})"><div class="stat-label">Risk Level <span class="info-icon" onclick="event.stopPropagation();document.getElementById('riskInfo').style.display=document.getElementById('riskInfo').style.display==='block'?'none':'block'" title="Risk levels info">ℹ️</span></div><div class="stat-value" id="riskLevel">—</div>
+      <div id="riskInfo" class="info-popup" style="display:none">
+        <div style="font-size:.8rem;font-weight:600;margin-bottom:6px;color:#fff">Risk Levels</div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:.75rem">
+          <div><span style="color:#00d4aa;font-weight:600">SAFE</span> — No risks detected, all tokens verified</div>
+          <div><span style="color:#00d4aa;font-weight:600">LOW</span> — Minor unknowns, no active threats</div>
+          <div><span style="color:#ffa726;font-weight:600">MEDIUM</span> — Some suspicious tokens or unverified approvals</div>
+          <div><span style="color:#ff6644;font-weight:600">HIGH</span> — Dangerous tokens, fake impersonators, risky approvals</div>
+          <div><span style="color:#ff2244;font-weight:600">CRITICAL</span> — Active threats, unlimited approvals to unknown spenders</div>
+        </div>
+      </div>
+    </div>
     <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('sectionVerified')?.scrollIntoView({behavior:'smooth',block:'start'})"><div class="stat-label">Total Tokens</div><div class="stat-value" id="tokenCount">—</div></div>
     <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('sectionSuspicious')?.scrollIntoView({behavior:'smooth',block:'start'})"><div class="stat-label">Suspicious</div><div class="stat-value" id="suspiciousCount">—</div></div>
   </div>
@@ -821,6 +836,9 @@ if(autoAddr){
   // If DOM already loaded
   if(document.readyState!=='loading')setTimeout(lookupWallet,100);
 }
+
+/* Close popups on outside click */
+document.addEventListener('click',e=>{if(!e.target.closest('.info-icon')&&!e.target.closest('.info-popup'))document.querySelectorAll('.info-popup').forEach(p=>p.style.display='none')});
 
 /* Solana address validation */
 function isValidSolanaAddr(addr){
