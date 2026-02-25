@@ -254,7 +254,7 @@ export async function lookupWalletApprovals(walletAddress: string) {
     const decimals = meta.decimals || 0;
     const humanBalance = Number(rawBal) / Math.pow(10, decimals);
     const usdValue = meta.priceUsd ? humanBalance * meta.priceUsd : null;
-    const symbol = meta.symbol || b.mint.slice(0, 6);
+    let symbol = meta.symbol || b.mint.slice(0, 6);
 
     // Classify token
     let status: 'verified' | 'unknown' | 'suspicious' = 'unknown';
@@ -268,6 +268,7 @@ export async function lookupWalletApprovals(walletAddress: string) {
       if (IMPERSONATED_NAMES.has(symbol.toUpperCase()) && !REAL_MINTS.has(b.mint)) {
         flags.push('Impersonates known token');
         status = 'suspicious';
+        symbol = `⚠ FAKE ${symbol}`;
       }
       if (symbol.includes('$') || symbol.includes('Ƨ') || symbol.includes('Ɐ') || /[^\x20-\x7E]/.test(symbol)) {
         flags.push('Unusual characters in name');

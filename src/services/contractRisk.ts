@@ -236,11 +236,13 @@ export async function analyzeTokenRisk(mint: string): Promise<TokenRiskReport> {
         });
       }
 
-      // Return with symbol from metadata
+      // Return with symbol from metadata (prefix fakes)
+      const isFake = IMPERSONATED_NAMES.includes(symbol) && !VERIFIED_MINTS.has(mint);
+      const displaySymbol = isFake ? `⚠ FAKE ${metadata.symbol}` : (metadata.symbol || null);
       const overallScore = Math.min(flags.reduce((s, f) => s + f.score, 0), 100);
       return {
         mint,
-        symbol: metadata.symbol || null,
+        symbol: displaySymbol,
         overallScore,
         level: scoreToLevel(overallScore),
         flags,
