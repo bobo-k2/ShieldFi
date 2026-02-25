@@ -319,10 +319,11 @@ function setRiskLevel(level){
   el.innerHTML=`<span style="color:${c};font-weight:700">${level||'—'}</span>`;
 }
 function setTokenStats(balances){
-  const verified=(balances||[]).filter(b=>b.status==='verified').length;
-  const unknown=(balances||[]).filter(b=>b.status==='unknown').length;
-  const suspicious=(balances||[]).filter(b=>b.status==='suspicious').length;
-  const total=balances?balances.length:0;
+  const spl=(balances||[]).filter(b=>b.symbol!=='SOL');
+  const verified=spl.filter(b=>b.status==='verified').length;
+  const unknown=spl.filter(b=>b.status==='unknown').length;
+  const suspicious=spl.filter(b=>b.status==='suspicious').length;
+  const total=spl.length;
   $('tokenCount').innerHTML=total?`${total}<div style="font-size:.6rem;color:#888;margin-top:2px;line-height:1.3"><span style="color:#00d4aa">${verified}✓</span> · <span style="color:#888">${unknown}?</span> · <span style="color:#ff6644">${suspicious}⚠</span></div>`:'—';
   const el=$('suspiciousCount');
   el.textContent=suspicious.toString();
