@@ -58,6 +58,7 @@
   /* Section */
   .section{margin-bottom:2rem;animation:fadeUp .4s ease both}
   .section-title{font-size:.85rem;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+  .section-title .caret{margin-left:auto;font-size:.7rem;color:#444;transition:transform .2s}
   .section-card{background:#111118;border:1px solid #1a1a2e;border-radius:14px;padding:1.5rem}
 
   /* Token grid */
@@ -582,7 +583,7 @@ async function loadTransactions(addr){
       return;
     }
 
-    let html='<div class="section-title">📜 Recent Activity</div>';
+    let html=`<div class="section-title" style="cursor:pointer;user-select:none" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.caret').textContent=this.nextElementSibling.style.display==='none'?'▸':'▾'">📜 Recent Activity (${txs.length}) <span class="caret">▾</span></div><div>`;
     for(const tx of txs){
       const type=tx.type||'UNKNOWN';
       const color=TX_TYPE_COLORS[type]||TX_TYPE_COLORS.UNKNOWN;
@@ -613,6 +614,7 @@ async function loadTransactions(addr){
         ${sig?`<a href="https://solscan.io/tx/${sig}" target="_blank" class="tx-link">View on Solscan →</a>`:''}
       </div>`;
     }
+    html+='</div>'; // close collapsible
     container.innerHTML=html;
   }catch{
     container.innerHTML='<div class="section-title">📜 Recent Activity</div><div style="color:#444;text-align:center;padding:1.5rem">Failed to load transactions.</div>';
@@ -751,7 +753,7 @@ function renderRiskAnalysis(data){
   const reports=data.tokenReports||[];
   if(!reports.length){$('tokenReports').innerHTML='<div style="color:#444;text-align:center;padding:1rem">No unknown/suspicious tokens to analyze.</div>';return}
 
-  let html='<div class="section-title" style="margin-top:1rem">Token Risk Reports</div>';
+  let html=`<div class="section-title" style="margin-top:1rem;cursor:pointer;user-select:none" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.caret').textContent=this.nextElementSibling.style.display==='none'?'▸':'▾'">Token Risk Reports (${reports.length}) <span class="caret">▾</span></div><div>`;
   for(const r of reports){
     const c=levelColors[r.level]||'#888';
     const flagsHtml=r.flags.map(f=>{
@@ -771,9 +773,10 @@ function renderRiskAnalysis(data){
     </div>`;
   }
 
+  html+='</div>'; // close token reports collapsible
   const spenderRisks=data.approvalRisks||[];
   if(spenderRisks.length>0){
-    html+='<div class="section-title" style="margin-top:1.5rem">Spender Analysis</div>';
+    html+=`<div class="section-title" style="margin-top:1.5rem;cursor:pointer;user-select:none" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.caret').textContent=this.nextElementSibling.style.display==='none'?'▸':'▾'">Spender Analysis (${spenderRisks.length}) <span class="caret">▾</span></div><div>`;
     for(const s of spenderRisks){
       const sColor=s.isKnown?'#00d4aa':s.riskScore>20?'#ff6644':'#ffaa00';
       html+=`<div style="padding:.75rem;background:#0a0a0a;border:1px solid #151520;border-left:3px solid ${sColor};border-radius:10px;margin-bottom:.5rem">
@@ -784,6 +787,7 @@ function renderRiskAnalysis(data){
         ${s.flags.map(f=>`<div style="font-size:.8rem;color:#666;margin-top:4px">${f.severity==='danger'?'🔴':'🟡'} ${f.signal}</div>`).join('')}
       </div>`;
     }
+    html+='</div>'; // close spender collapsible
   }
   $('tokenReports').innerHTML=html;
 }
