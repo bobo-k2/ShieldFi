@@ -177,9 +177,9 @@
 
   <!-- Stat Cards -->
   <div class="stat-cards" id="cards" style="display:none">
-    <div class="stat-card"><div class="stat-label">Risk Level</div><div class="stat-value" id="riskLevel">—</div></div>
-    <div class="stat-card"><div class="stat-label">Total Tokens</div><div class="stat-value" id="tokenCount">—</div></div>
-    <div class="stat-card"><div class="stat-label">Suspicious</div><div class="stat-value" id="suspiciousCount">—</div></div>
+    <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('riskAnalysis')?.scrollIntoView({behavior:'smooth',block:'start'})"><div class="stat-label">Risk Level</div><div class="stat-value" id="riskLevel">—</div></div>
+    <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('sectionVerified')?.scrollIntoView({behavior:'smooth',block:'start'})"><div class="stat-label">Total Tokens</div><div class="stat-value" id="tokenCount">—</div></div>
+    <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('sectionSuspicious')?.scrollIntoView({behavior:'smooth',block:'start'})"><div class="stat-label">Suspicious</div><div class="stat-value" id="suspiciousCount">—</div></div>
   </div>
 
   <!-- Monitor Section (hidden initially) — TOP FEATURE -->
@@ -499,7 +499,7 @@ function renderLookup(data){
     // Verified tokens
     if(verified.length>0){
       const totalUsd=verified.reduce((s,b)=>s+(b.usdValue||0),0);
-      html+=`<div class="section"><div class="section-title">✅ Verified Tokens <span style="color:#00d4aa;font-size:.8rem;font-weight:400;text-transform:none;letter-spacing:0">— ${fmtUsd(totalUsd)} total</span></div><div class="token-grid">`;
+      html+=`<div class="section" id="sectionVerified"><div class="section-title">✅ Verified Tokens <span style="color:#00d4aa;font-size:.8rem;font-weight:400;text-transform:none;letter-spacing:0">— ${fmtUsd(totalUsd)} total</span></div><div class="token-grid">`;
       for(const b of verified){
         if(b.symbol==='SOL')continue;
         html+=tokenCard(b,true);
@@ -508,13 +508,13 @@ function renderLookup(data){
     }
 
     if(unknown.length>0){
-      html+=`<div class="section"><div class="section-title">❓ Unknown Tokens (${unknown.length})</div><div class="token-grid">`;
+      html+=`<div class="section" id="sectionUnknown"><div class="section-title">❓ Unknown Tokens (${unknown.length})</div><div class="token-grid">`;
       for(const b of unknown)html+=tokenCard(b,false);
       html+='</div></div>';
     }
 
     if(suspicious.length>0){
-      html+=`<div class="section"><div class="section-title" style="color:#ff6644">⚠️ Suspicious Tokens (${suspicious.length})</div>
+      html+=`<div class="section" id="sectionSuspicious"><div class="section-title" style="color:#ff6644">⚠️ Suspicious Tokens (${suspicious.length})</div>
         <div style="font-size:.8rem;color:#555;margin-bottom:.75rem">These tokens may be scam airdrops. Do not interact with them.</div>
         <div class="token-grid">`;
       for(const b of suspicious)html+=tokenCard(b,false);
