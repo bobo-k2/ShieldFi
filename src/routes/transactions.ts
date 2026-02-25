@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { PublicKey } from '@solana/web3.js';
 import { env } from '../env.js';
 
 export async function transactionRoutes(app: FastifyInstance) {
@@ -6,6 +7,9 @@ export async function transactionRoutes(app: FastifyInstance) {
     const { address } = request.params as { address: string };
     const { limit: rawLimit } = request.query as { limit?: string };
     const limit = Math.min(Math.max(parseInt(rawLimit || '20', 10) || 20, 1), 50);
+
+    // Validate address
+    try { new PublicKey(address); } catch { return reply.status(400).send({ error: 'Invalid Solana address' }); }
 
     if (!env.HELIUS_API_KEY) {
       return reply.status(500).send({ error: 'Helius API key not configured' });

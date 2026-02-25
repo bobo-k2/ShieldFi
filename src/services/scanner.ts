@@ -203,11 +203,29 @@ export async function lookupWalletApprovals(walletAddress: string) {
   const solLamports = await connection.getBalance(owner);
   const solBalance = solLamports / 1e9;
   let solPrice: number | null = null;
+  // Try CoinGecko first, fall back to Helius DAS for wSOL
   try {
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd', { signal: AbortSignal.timeout(5000) });
-    const json = await res.json() as any;
-    solPrice = json?.solana?.usd ?? null;
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd', { signal: AbortSignal.timeout(3000) });
+    if (res.ok) {
+      const json = await res.json() as any;
+      solPrice = json?.solana?.usd ?? null;
+    }
   } catch {}
+  // Fallback: get wSOL price from Helius DAS
+  if (solPrice == null && env.HELIUS_API_KEY) {
+    try {
+      const res = await fetch(`https://mainnet.helius-rpc.com/?api-key=${env.HELIUS_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: '1', method: 'getAsset',
+          params: { id: 'So11111111111111111111111111111111111111112', displayOptions: { showFungible: true } },
+        }),
+      });
+      const json = await res.json() as any;
+      solPrice = json?.result?.token_info?.price_info?.price_per_token ?? null;
+    } catch {}
+  }
 
   // Known token names that scammers impersonate
   const IMPERSONATED_NAMES = new Set(['SOL', 'ETH', 'BTC', 'USDC', 'USDT', 'BONK', 'JUP', 'WIF', 'PYTH', 'JTO', 'RNDR', 'HNT']);
