@@ -392,15 +392,18 @@ export async function analyzeWalletRisk(walletAddress: string, balances: any[], 
 
   const level = scoreToLevel(overallScore);
 
-  // Generate summary
+  // Generate summary with token names
+  const tokenLink = (r: TokenRiskReport) => `<a href="https://solscan.io/token/${r.mint}" target="_blank" style="color:#7b61ff;text-decoration:none">${r.symbol || r.mint.slice(0, 8) + '…'}</a>`;
+
   const parts: string[] = [];
-  if (dangerousTokens > 0) parts.push(`${dangerousTokens} high-risk token${dangerousTokens > 1 ? 's' : ''} detected`);
+  const highRiskTokens = tokenReports.filter(r => r.level === 'HIGH' || r.level === 'CRITICAL');
+  if (highRiskTokens.length > 0) parts.push(`${highRiskTokens.length} high-risk token${highRiskTokens.length > 1 ? 's' : ''}: ${highRiskTokens.map(tokenLink).join(', ')}`);
   if (suspiciousTokens > 0) parts.push(`${suspiciousTokens} suspicious token${suspiciousTokens > 1 ? 's' : ''} (likely spam)`);
   if (approvals.length > 0) parts.push(`${approvals.length} active approval${approvals.length > 1 ? 's' : ''}`);
-  const mintAuthTokens = tokenReports.filter(r => r.metadata?.mintAuthority).length;
-  if (mintAuthTokens > 0) parts.push(`${mintAuthTokens} token${mintAuthTokens > 1 ? 's' : ''} with active mint authority`);
-  const freezeTokens = tokenReports.filter(r => r.metadata?.freezeAuthority).length;
-  if (freezeTokens > 0) parts.push(`${freezeTokens} token${freezeTokens > 1 ? 's' : ''} with freeze authority`);
+  const mintAuthList = tokenReports.filter(r => r.metadata?.mintAuthority);
+  if (mintAuthList.length > 0) parts.push(`${mintAuthList.length} token${mintAuthList.length > 1 ? 's' : ''} with active mint authority: ${mintAuthList.map(tokenLink).join(', ')}`);
+  const freezeList = tokenReports.filter(r => r.metadata?.freezeAuthority);
+  if (freezeList.length > 0) parts.push(`${freezeList.length} token${freezeList.length > 1 ? 's' : ''} with freeze authority: ${freezeList.map(tokenLink).join(', ')}`);
 
   const summary = parts.length > 0
     ? parts.join('. ') + '.'
