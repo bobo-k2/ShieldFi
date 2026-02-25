@@ -5,45 +5,184 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ShieldFi — AI-Powered Solana Wallet Security</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .hero { text-align: center; max-width: 640px; padding: 2rem; }
-  h1 { font-size: 3.5rem; margin-bottom: 0.25rem; background: linear-gradient(135deg, #00d4aa, #7b61ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .tagline { font-size: 1.3rem; color: #999; margin-bottom: 0.5rem; }
-  .subtitle { font-size: 1rem; color: #555; margin-bottom: 2.5rem; }
-  .btn { display: inline-block; padding: 16px 36px; background: linear-gradient(135deg, #00d4aa, #7b61ff); color: #000; font-size: 1.1rem; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; text-decoration: none; transition: transform 0.15s, opacity 0.2s; }
-  .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-  .features { display: flex; gap: 1.5rem; margin-top: 3.5rem; flex-wrap: wrap; justify-content: center; }
-  .feature { background: #111118; border: 1px solid #1a1a2e; padding: 1.75rem 1.5rem; border-radius: 14px; width: 180px; text-align: center; transition: border-color 0.2s; }
-  .feature:hover { border-color: #00d4aa44; }
-  .feature .icon { font-size: 2.25rem; margin-bottom: 0.75rem; }
-  .feature h3 { font-size: 0.9rem; color: #00d4aa; margin-bottom: 0.35rem; }
-  .feature p { font-size: 0.75rem; color: #555; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#e0e0e0;line-height:1.6;overflow-x:hidden}
+
+  /* Grid background */
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:64px 64px;pointer-events:none;z-index:0}
+
+  /* Nav */
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;background:rgba(10,10,10,.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.04)}
+  .nav-logo{font-size:1.25rem;font-weight:700;text-decoration:none;background:linear-gradient(135deg,#00d4aa,#7b61ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .btn{display:inline-block;padding:10px 24px;background:linear-gradient(135deg,#00d4aa,#7b61ff);color:#000;font-size:.9rem;font-weight:700;border:none;border-radius:8px;cursor:pointer;text-decoration:none;transition:transform .15s,opacity .2s,box-shadow .2s}
+  .btn:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,212,170,.25)}
+  .btn-sm{padding:8px 20px;font-size:.85rem}
+  .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.15);color:#ccc;font-weight:500}
+  .btn-ghost:hover{border-color:#00d4aa;color:#00d4aa;background:transparent;box-shadow:none}
+
+  /* Sections */
+  section{position:relative;z-index:1;padding:6rem 2rem}
+  .wrap{max-width:1100px;margin:0 auto}
+
+  /* Hero */
+  .hero{min-height:100vh;display:flex;align-items:center;padding-top:5rem}
+  .hero-content{width:100%;text-align:center}
+  .hero h1{font-size:clamp(2.5rem,6vw,4rem);font-weight:800;letter-spacing:-.02em;margin-bottom:.75rem;line-height:1.1}
+  .hero h1 .gradient{background:linear-gradient(135deg,#00d4aa,#7b61ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hero .subtitle{font-size:clamp(1rem,2.5vw,1.35rem);color:#888;max-width:560px;margin:0 auto 2.5rem}
+
+  /* Scan input */
+  .scan-box{max-width:560px;margin:0 auto 1.5rem;position:relative}
+  .scan-box input{width:100%;padding:16px 130px 16px 20px;background:#111118;border:1px solid #2a2a3e;border-radius:12px;color:#e0e0e0;font-family:monospace;font-size:1rem;outline:none;transition:border-color .2s,box-shadow .2s}
+  .scan-box input:focus{border-color:#00d4aa;box-shadow:0 0 0 3px rgba(0,212,170,.1)}
+  .scan-box input::placeholder{color:#444}
+  .scan-box button{position:absolute;right:6px;top:50%;transform:translateY(-50%);padding:10px 24px}
+  .hero .secondary-cta{color:#666;font-size:.9rem;margin-top:.5rem}
+  .hero .secondary-cta a{color:#7b61ff;text-decoration:none}
+  .hero .secondary-cta a:hover{text-decoration:underline}
+
+  /* Trust bar */
+  .trust-bar{text-align:center;padding:2rem 2rem 0;position:relative;z-index:1}
+  .trust-bar p{font-size:.95rem;color:#555;letter-spacing:.02em}
+  .trust-bar span{color:#00d4aa}
+
+  /* Features */
+  .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+  .feature-card{background:#111118;border:1px solid #1a1a2e;border-radius:14px;padding:2rem 1.5rem;transition:border-color .25s,transform .25s}
+  .feature-card:hover{border-color:rgba(0,212,170,.3);transform:translateY(-2px)}
+  .feature-card .icon{font-size:2rem;margin-bottom:1rem;display:block}
+  .feature-card h3{font-size:1rem;color:#e0e0e0;margin-bottom:.5rem}
+  .feature-card p{font-size:.85rem;color:#666;line-height:1.5}
+
+  .section-heading{text-align:center;margin-bottom:3rem}
+  .section-heading h2{font-size:clamp(1.5rem,3vw,2.25rem);font-weight:700;margin-bottom:.5rem}
+  .section-heading p{color:#666;font-size:1rem;max-width:500px;margin:0 auto}
+  .section-heading .gradient{background:linear-gradient(135deg,#00d4aa,#7b61ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+  /* How it works */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;text-align:center}
+  .step-num{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#00d4aa,#7b61ff);color:#000;font-weight:800;font-size:1.2rem;display:inline-flex;align-items:center;justify-content:center;margin-bottom:1rem}
+  .step h3{font-size:1.05rem;margin-bottom:.5rem}
+  .step p{font-size:.85rem;color:#666}
+
+  /* Arrow between steps */
+  .steps .arrow{display:none}
+
+  /* Bottom CTA */
+  .bottom-cta{text-align:center}
+  .bottom-cta .scan-box{margin-bottom:1rem}
+
+  /* Footer */
+  footer{position:relative;z-index:1;text-align:center;padding:3rem 2rem;border-top:1px solid rgba(255,255,255,.04);color:#444;font-size:.85rem}
+  footer a{color:#666;text-decoration:none;margin:0 .75rem}
+  footer a:hover{color:#00d4aa}
+
+  /* Responsive */
+  @media(max-width:768px){
+    nav{padding:.75rem 1rem}
+    section{padding:4rem 1.5rem}
+    .features-grid{grid-template-columns:1fr}
+    .steps{grid-template-columns:1fr;gap:1.5rem}
+    .hero{min-height:auto;padding-top:7rem;padding-bottom:2rem}
+  }
+  @media(min-width:769px) and (max-width:1024px){
+    .features-grid{grid-template-columns:repeat(2,1fr)}
+  }
+
+  /* Fade-in animation */
+  .fade-in{opacity:0;transform:translateY(20px);transition:opacity .6s,transform .6s}
+  .fade-in.visible{opacity:1;transform:translateY(0)}
 </style>
 </head>
 <body>
-<div class="hero">
-  <h1>🛡️ ShieldFi</h1>
-  <p class="tagline">AI-Powered Solana Wallet Security</p>
-  <p class="subtitle">Scan approvals. Detect threats. Revoke with one click.</p>
-  <a href="/dashboard.html" class="btn">Connect Wallet & Start →</a>
-  <div class="features">
-    <div class="feature">
-      <div class="icon">🔍</div>
-      <h3>Approval Scanner</h3>
-      <p>Detect all token delegations across SPL & Token-2022</p>
+
+<nav>
+  <a href="/" class="nav-logo">🛡️ ShieldFi</a>
+  <a href="/dashboard.html" class="btn btn-sm">Launch App →</a>
+</nav>
+
+<section class="hero">
+  <div class="wrap hero-content">
+    <h1>Protect your <span class="gradient">Solana wallet</span> from hidden threats</h1>
+    <p class="subtitle">Scan approvals, detect suspicious tokens, and get AI-powered risk analysis — for any wallet, no signup required.</p>
+    <div class="scan-box">
+      <input type="text" id="heroAddr" placeholder="Paste any Solana wallet address…" autocomplete="off">
+      <button class="btn btn-sm" onclick="goScan()">Scan →</button>
     </div>
-    <div class="feature">
-      <div class="icon">⚡</div>
-      <h3>Risk Scoring</h3>
-      <p>AI-powered risk assessment for every approval</p>
+    <p class="secondary-cta">or <a href="/dashboard.html">Connect Phantom Wallet</a></p>
+  </div>
+</section>
+
+<div class="trust-bar fade-in">
+  <p><span>✦</span> Scan any Solana wallet — no signup, no connection required <span>✦</span></p>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="section-heading fade-in">
+      <h2>Everything you need to <span class="gradient">stay safe</span></h2>
+      <p>Comprehensive security scanning for the Solana ecosystem</p>
     </div>
-    <div class="feature">
-      <div class="icon">🚫</div>
-      <h3>One-Click Revoke</h3>
-      <p>Instantly revoke dangerous approvals via Phantom</p>
+    <div class="features-grid">
+      <div class="feature-card fade-in"><span class="icon">🔍</span><h3>Approval Scanner</h3><p>Detect all token delegations across SPL & Token-2022 programs. See who has access to your tokens.</p></div>
+      <div class="feature-card fade-in"><span class="icon">🤖</span><h3>AI Risk Analysis</h3><p>Deep contract analysis: mint authority, freeze authority, impersonation detection powered by AI.</p></div>
+      <div class="feature-card fade-in"><span class="icon">📊</span><h3>Token Classification</h3><p>Verified, unknown, and suspicious token categorization with automatic spam detection.</p></div>
+      <div class="feature-card fade-in"><span class="icon">🔔</span><h3>Real-Time Monitoring</h3><p>Get Telegram alerts when new transactions hit your wallet. Know instantly when something changes.</p></div>
+      <div class="feature-card fade-in"><span class="icon">💰</span><h3>Portfolio View</h3><p>SOL + SPL token balances with live USD values. See your entire portfolio at a glance.</p></div>
+      <div class="feature-card fade-in"><span class="icon">📜</span><h3>Transaction History</h3><p>Recent activity with type badges, token transfer details, and direct Solscan links.</p></div>
     </div>
   </div>
-</div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-heading fade-in">
+      <h2>How it <span class="gradient">works</span></h2>
+    </div>
+    <div class="steps">
+      <div class="step fade-in"><div class="step-num">1</div><h3>Paste any address</h3><p>Enter any Solana wallet address — yours or anyone else's. No wallet connection needed.</p></div>
+      <div class="step fade-in"><div class="step-num">2</div><h3>Instant scan</h3><p>We analyze on-chain data: token balances, approvals, delegations, and contract metadata.</p></div>
+      <div class="step fade-in"><div class="step-num">3</div><h3>Act on threats</h3><p>Review risk scores, revoke dangerous approvals, and set up real-time monitoring alerts.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="bottom-cta">
+  <div class="wrap fade-in">
+    <div class="section-heading">
+      <h2>Ready to <span class="gradient">scan</span>?</h2>
+      <p>Check any wallet in seconds</p>
+    </div>
+    <div class="scan-box">
+      <input type="text" id="bottomAddr" placeholder="Paste a Solana wallet address…" autocomplete="off">
+      <button class="btn btn-sm" onclick="goScan('bottom')">Scan →</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Built for Solana. Open source soon.</p>
+  <div style="margin-top:.75rem">
+    <a href="/dashboard.html">Dashboard</a>
+    <a href="https://github.com" target="_blank">GitHub</a>
+  </div>
+</footer>
+
+<script>
+function goScan(from){
+  const id = from==='bottom' ? 'bottomAddr' : 'heroAddr';
+  const addr = document.getElementById(id).value.trim();
+  if(!addr){document.getElementById(id).focus();return}
+  window.location.href='/dashboard.html?address='+encodeURIComponent(addr);
+}
+// Enter key
+document.getElementById('heroAddr').addEventListener('keydown',e=>{if(e.key==='Enter')goScan()});
+document.getElementById('bottomAddr').addEventListener('keydown',e=>{if(e.key==='Enter')goScan('bottom')});
+
+// Scroll fade-in
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:.1});
+document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el));
+</script>
 </body>
 </html>
