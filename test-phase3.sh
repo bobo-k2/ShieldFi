@@ -210,9 +210,35 @@ monitored=$(echo "$r" | python3 -c "import sys,json;print(json.load(sys.stdin).g
 r=$(curl -s "$BASE/api/monitor/$BOT/alerts")
 echo "$r" | python3 -c "import sys,json;json.load(sys.stdin)" 2>/dev/null && pass "Monitor alerts endpoint works" || fail "Monitor alerts endpoint broken"
 
+# Check expiry field returned
+r=$(curl -s "$BASE/api/monitor/$BOT/status")
+expires=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);print('yes' if d.get('expiresAt') else 'no')" 2>/dev/null)
+[ "$expires" = "yes" ] && pass "Monitor expiry field present" || warn "Monitor expiry not in status response"
+
+# Renew monitoring
+r=$(curl -s -X POST "$BASE/api/monitor/renew" -H "Content-Type: application/json" -d "{\"address\":\"$BOT\"}")
+echo "$r" | grep -q "success" && pass "Monitor renew works" || fail "Monitor renew failed"
+
+# List monitors shows limit info
+r=$(curl -s "$BASE/api/monitor")
+has_limit=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);print('yes' if 'limit' in d else 'no')" 2>/dev/null)
+[ "$has_limit" = "yes" ] && pass "Monitor list includes limit info" || fail "Monitor list missing limit info"
+
 # Stop monitoring
 r=$(curl -s -X DELETE "$BASE/api/monitor/$BOT")
 echo "$r" | grep -q "error" && fail "Stop monitoring failed" || pass "Stop monitoring succeeded"
+
+# Rate limit test: add 5 wallets then try a 6th
+FAKE_ADDRS=("1111111111111111111111111111111111" "2222222222222222222222222222222222" "3333333333333333333333333333333333" "4444444444444444444444444444444444" "5555555555555555555555555555555555")
+for addr in "${FAKE_ADDRS[@]}"; do
+  curl -s -X POST "$BASE/api/monitor/add" -H "Content-Type: application/json" -d "{\"address\":\"$addr\"}" > /dev/null
+done
+r=$(curl -s -X POST "$BASE/api/monitor/add" -H "Content-Type: application/json" -d "{\"address\":\"6666666666666666666666666666666666\"}")
+echo "$r" | grep -q "limit" && pass "Monitor rate limit enforced (6th wallet rejected)" || fail "Monitor rate limit NOT enforced"
+# Cleanup fake monitors
+for addr in "${FAKE_ADDRS[@]}"; do
+  curl -s -X DELETE "$BASE/api/monitor/$addr" > /dev/null
+done
 
 echo ""
 

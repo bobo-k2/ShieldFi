@@ -1,7 +1,31 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../db.js';
 
+const MAX_MONITORS_PER_IP = 5;
+const MONITOR_EXPIRY_DAYS = 7;
+
+function getClientIp(request: any): string {
+  return request.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || request.headers['x-real-ip']
+    || request.ip
+    || 'unknown';
+}
+
+function expiryDate(): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + MONITOR_EXPIRY_DAYS);
+  return d;
+}
+
 export async function monitorRoutes(app: FastifyInstance) {
+  // Expire stale monitors on each request (lightweight — only updates)
+  app.addHook('onRequest', async () => {
+    await prisma.monitoredWallet.updateMany({
+      where: { isActive: true, expiresAt: { not: null, lt: new Date() } },
+      data: { isActive: false },
+    });
+  });
+
   // Add wallet to monitoring
   app.post<{ Body: { address: string; label?: string } }>('/api/monitor/add', async (request, reply) => {
     try {
@@ -10,13 +34,30 @@ export async function monitorRoutes(app: FastifyInstance) {
         return reply.status(400).send({ error: 'Valid Solana address required' });
       }
 
+      const clientIp = getClientIp(request);
+
+      // Check if this wallet is already monitored (reactivation doesn't count against limit)
+      const existing = await prisma.monitoredWallet.findUnique({ where: { address } });
+
+      if (!existing) {
+        // New wallet — enforce per-IP limit
+        const activeCount = await prisma.monitoredWallet.count({
+          where: { createdByIp: clientIp, isActive: true },
+        });
+        if (activeCount >= MAX_MONITORS_PER_IP) {
+          return reply.status(429).send({
+            error: `Monitor limit reached. Maximum ${MAX_MONITORS_PER_IP} active monitors per user. Remove an existing monitor first.`,
+          });
+        }
+      }
+
       const wallet = await prisma.monitoredWallet.upsert({
         where: { address },
-        update: { isActive: true, label: label || undefined },
-        create: { address, label: label || null },
+        update: { isActive: true, label: label || undefined, expiresAt: expiryDate(), createdByIp: clientIp },
+        create: { address, label: label || null, createdByIp: clientIp, expiresAt: expiryDate() },
       });
 
-      return { success: true, wallet };
+      return { success: true, wallet: { ...wallet, expiresAt: wallet.expiresAt?.toISOString() } };
     } catch (e: any) {
       app.log.error(e);
       return reply.status(500).send({ error: 'Failed to add wallet: ' + e.message });
@@ -38,13 +79,14 @@ export async function monitorRoutes(app: FastifyInstance) {
     }
   });
 
-  // List monitored wallets
-  app.get('/api/monitor', async () => {
+  // List monitored wallets (scoped to requester IP)
+  app.get('/api/monitor', async (request) => {
+    const clientIp = getClientIp(request);
     const wallets = await prisma.monitoredWallet.findMany({
-      where: { isActive: true },
+      where: { isActive: true, createdByIp: clientIp },
       orderBy: { createdAt: 'desc' },
     });
-    return { wallets };
+    return { wallets, limit: MAX_MONITORS_PER_IP, active: wallets.length };
   });
 
   // Get alerts for a wallet
@@ -75,7 +117,30 @@ export async function monitorRoutes(app: FastifyInstance) {
       lastCheckedAt: wallet?.lastCheckedAt ?? null,
       telegramLinked: !!wallet?.telegramChatId,
       linkCode: wallet?.linkCode ?? null,
+      expiresAt: wallet?.expiresAt?.toISOString() ?? null,
     };
+  });
+
+  // Renew monitoring (resets expiry timer)
+  app.post<{ Body: { address: string } }>('/api/monitor/renew', async (request, reply) => {
+    try {
+      const { address } = request.body || {};
+      if (!address) return reply.status(400).send({ error: 'address required' });
+
+      const wallet = await prisma.monitoredWallet.findUnique({ where: { address } });
+      if (!wallet || !wallet.isActive) {
+        return reply.status(404).send({ error: 'Wallet not actively monitored' });
+      }
+
+      await prisma.monitoredWallet.update({
+        where: { id: wallet.id },
+        data: { expiresAt: expiryDate() },
+      });
+
+      return { success: true, expiresAt: expiryDate().toISOString() };
+    } catch (e: any) {
+      return reply.status(500).send({ error: e.message });
+    }
   });
 
   // Generate a Telegram link code for a monitored wallet
@@ -103,7 +168,6 @@ export async function monitorRoutes(app: FastifyInstance) {
         });
       }
 
-      // Bot username from token (we'll need to fetch it once)
       const botUsername = await getBotUsername();
       const deepLink = `https://t.me/${botUsername}?start=${linkCode}`;
 

@@ -95,6 +95,8 @@ model MonitoredWallet {
   lastSignature   String?
   lastCheckedAt   DateTime?
   isActive        Boolean   @default(true)
+  createdByIp     String?
+  expiresAt       DateTime?
   createdAt       DateTime  @default(now())
 
   monitorAlerts MonitorAlert[]
