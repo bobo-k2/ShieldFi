@@ -172,9 +172,9 @@
 
   <!-- Stat Cards -->
   <div class="stat-cards" id="cards" style="display:none">
-    <div class="stat-card"><div class="stat-label">Wallet Health</div><div class="stat-value" id="healthScore">—</div></div>
-    <div class="stat-card"><div class="stat-label">Active Approvals</div><div class="stat-value" id="approvalCount">0</div></div>
-    <div class="stat-card"><div class="stat-label">Highest Risk</div><div class="stat-value" id="highestRisk">—</div></div>
+    <div class="stat-card"><div class="stat-label">Risk Level</div><div class="stat-value" id="riskLevel">—</div></div>
+    <div class="stat-card"><div class="stat-label">Total Tokens</div><div class="stat-value" id="tokenCount">—</div></div>
+    <div class="stat-card"><div class="stat-label">Suspicious</div><div class="stat-value" id="suspiciousCount">—</div></div>
   </div>
 
   <!-- Monitor Section (hidden initially) — TOP FEATURE -->
@@ -262,6 +262,7 @@ function copyable(addr){
 /* Skeleton loading */
 function showSkeleton(){
   $('cards').style.display='grid';
+  $('riskLevel').textContent='⏳';$('tokenCount').textContent='…';$('suspiciousCount').textContent='…';
   $('content').innerHTML=`
     <div class="skeleton h-card" style="margin-bottom:1.5rem"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem">
@@ -275,11 +276,21 @@ function showSkeleton(){
     <div class="skeleton" style="height:60px;border-radius:10px"></div>`;
 }
 
-function setScore(riskScore){
-  const el=$('healthScore');
-  const health=100-riskScore;
-  el.textContent=health+'/100';
-  el.className='stat-value '+(health>=75?'score-good':health>=40?'score-warn':'score-bad');
+function setRiskLevel(level){
+  const el=$('riskLevel');
+  const colors={SAFE:'#00d4aa',LOW:'#00d4aa',MEDIUM:'#ffa726',HIGH:'#ff6644',CRITICAL:'#ff2244'};
+  const c=colors[level]||'#888';
+  el.innerHTML=`<span style="color:${c};font-weight:700">${level||'—'}</span>`;
+}
+function setTokenStats(balances){
+  const verified=(balances||[]).filter(b=>b.status==='verified').length;
+  const unknown=(balances||[]).filter(b=>b.status==='unknown').length;
+  const suspicious=(balances||[]).filter(b=>b.status==='suspicious').length;
+  const total=balances?balances.length:0;
+  $('tokenCount').innerHTML=total?`${total} <span style="font-size:.7rem;color:#888">(${verified}✅ ${unknown}❓ ${suspicious}🚩)</span>`:'—';
+  const el=$('suspiciousCount');
+  el.textContent=suspicious.toString();
+  el.className='stat-value '+(suspicious===0?'score-good':suspicious<=2?'score-warn':'score-bad');
 }
 
 /* Base58 */
@@ -380,15 +391,13 @@ async function loadApprovals(){
 }
 
 function renderApprovals(approvals,score){
-  setScore(score);$('approvalCount').textContent=approvals.length;
+  setRiskLevel(approvals.length?null:'SAFE');
+  setTokenStats([]);
   if(!approvals.length){
-    $('highestRisk').textContent='—';$('highestRisk').className='stat-value score-good';
     $('content').innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>No active approvals found. Your wallet looks clean!</p></div>';
     return;
   }
   const riskOrder={CRITICAL:4,HIGH:3,MEDIUM:2,LOW:1};
-  const worst=approvals.reduce((a,b)=>(riskOrder[b.riskLevel]||0)>(riskOrder[a.riskLevel]||0)?b:a);
-  $('highestRisk').innerHTML=`<span class="badge badge-${worst.riskLevel}">${worst.riskLevel}</span>`;
 
   let html='<div class="section"><div class="section-title">Active Approvals</div>';
   for(const a of approvals){
@@ -448,10 +457,8 @@ async function lookupWallet(){
     $('monitorSection').style.display='block';
     $('riskAnalysis').style.display='block';
     checkMonitorStatus(addr);
-    // Auto-trigger risk analysis if unknown/suspicious tokens found
-    if(hasUnknownOrSuspicious){
-      setTimeout(()=>runRiskAnalysis(),500);
-    }
+    // Always auto-trigger risk analysis on scan
+    setTimeout(()=>runRiskAnalysis(),300);
   }catch(e){
     showError(e.message);
     $('content').innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><p>Lookup failed. Check the address.</p></div>';
@@ -459,7 +466,7 @@ async function lookupWallet(){
 }
 
 function renderLookup(data){
-  setScore(data.walletScore);$('approvalCount').textContent=data.approvals.length;
+  setTokenStats(data.balances||[]);
   hasUnknownOrSuspicious=false;
   let html='';
 
@@ -510,8 +517,6 @@ function renderLookup(data){
   if(data.approvals.length>0){
     const riskOrder={CRITICAL:4,HIGH:3,MEDIUM:2,LOW:1};
     const worst=data.approvals.reduce((a,b)=>(riskOrder[b.riskLevel]||0)>(riskOrder[a.riskLevel]||0)?b:a);
-    $('highestRisk').innerHTML=`<span class="badge badge-${worst.riskLevel}">${worst.riskLevel}</span>`;
-
     html+='<div class="section"><div class="section-title">🔓 Active Approvals</div>';
     for(const a of data.approvals){
       html+=`<div class="approval-card">
@@ -530,7 +535,6 @@ function renderLookup(data){
     }
     html+='</div>';
   }else{
-    $('highestRisk').textContent='—';$('highestRisk').className='stat-value score-good';
     if(!data.balances?.length){
       html='<div class="empty-state"><div class="empty-icon">📭</div><p>No tokens or approvals found. Wallet may be empty.</p></div>';
     }
@@ -729,6 +733,7 @@ async function runRiskAnalysis(){
 }
 
 function renderRiskAnalysis(data){
+  setRiskLevel(data.level);
   const summaryEl=$('riskSummary');summaryEl.style.display='block';
   const levelColors={SAFE:'#00d4aa',LOW:'#00d4aa',MEDIUM:'#ffaa00',HIGH:'#ff6644',CRITICAL:'#ff0044'};
   const levelEmoji={SAFE:'✅',LOW:'🟢',MEDIUM:'🟡',HIGH:'🟠',CRITICAL:'🔴'};
