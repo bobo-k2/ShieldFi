@@ -141,12 +141,23 @@
     .nav-right{gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
     .nav-right .btn-sm{padding:6px 12px;font-size:.75rem}
     .wallet-pill{font-size:.7rem;padding:4px 8px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .container{padding:1rem}
+    .container{padding:.75rem}
+    .scan-section{padding:1rem;margin-bottom:1rem}
     .scan-row{flex-direction:column}
-    .stat-cards{grid-template-columns:1fr 1fr}
+    .stat-cards{grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:1rem}
+    .stat-card{padding:.65rem .75rem}
+    .stat-label{font-size:.6rem;letter-spacing:.3px}
+    .stat-value{font-size:1rem;word-break:break-word}
     .token-grid{grid-template-columns:1fr}
-    .sol-hero .amount{font-size:2rem}
+    .token-item{padding:.6rem .75rem}
+    .sol-hero .amount{font-size:1.8rem}
+    .sol-hero{padding:1rem}
+    .section-card{padding:1rem}
+    .section-title{font-size:.75rem}
     .approval-header{flex-direction:column;align-items:flex-start}
+    .tx-item{padding:.75rem}
+    .btn{padding:8px 14px;font-size:.8rem}
+    .toast{max-width:280px;font-size:.8rem}
   }
 </style>
 </head>
@@ -296,7 +307,7 @@ function setTokenStats(balances){
   const unknown=(balances||[]).filter(b=>b.status==='unknown').length;
   const suspicious=(balances||[]).filter(b=>b.status==='suspicious').length;
   const total=balances?balances.length:0;
-  $('tokenCount').innerHTML=total?`${total} <span style="font-size:.7rem;color:#888">(${verified}✅ ${unknown}❓ ${suspicious}🚩)</span>`:'—';
+  $('tokenCount').innerHTML=total?`${total}<div style="font-size:.6rem;color:#888;margin-top:2px;line-height:1.3"><span style="color:#00d4aa">${verified}✓</span> · <span style="color:#888">${unknown}?</span> · <span style="color:#ff6644">${suspicious}⚠</span></div>`:'—';
   const el=$('suspiciousCount');
   el.textContent=suspicious.toString();
   el.className='stat-value '+(suspicious===0?'score-good':suspicious<=2?'score-warn':'score-bad');
