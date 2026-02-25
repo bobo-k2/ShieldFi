@@ -406,7 +406,7 @@ export async function analyzeWalletRisk(walletAddress: string, balances: any[], 
   if (freezeList.length > 0) parts.push(`${freezeList.length} token${freezeList.length > 1 ? 's' : ''} with freeze authority: ${freezeList.map(tokenLink).join(', ')}`);
 
   const summary = parts.length > 0
-    ? parts.join('. ') + '.'
+    ? parts.map(p => `<div style="margin-bottom:6px">• ${p}</div>`).join('')
     : 'No significant risks detected.';
 
   return { overallScore, level, tokenReports, approvalRisks, summary };
