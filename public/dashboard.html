@@ -132,7 +132,10 @@
 
   /* Responsive */
   @media(max-width:640px){
-    .topnav{padding:.75rem 1rem}
+    .topnav{padding:.5rem .75rem;flex-wrap:wrap;gap:.5rem}
+    .nav-right{gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+    .nav-right .btn-sm{padding:6px 12px;font-size:.75rem}
+    .wallet-pill{font-size:.7rem;padding:4px 8px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .container{padding:1rem}
     .scan-row{flex-direction:column}
     .stat-cards{grid-template-columns:1fr 1fr}
