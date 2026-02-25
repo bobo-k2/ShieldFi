@@ -523,14 +523,12 @@ function renderLookup(data){
       </div>`;
     }
 
-    // Verified tokens
-    if(verified.length>0){
+    // Verified tokens (exclude SOL — it has its own hero card)
+    const verifiedNonSol=verified.filter(b=>b.symbol!=='SOL');
+    if(verifiedNonSol.length>0){
       const totalUsd=verified.reduce((s,b)=>s+(b.usdValue||0),0);
       html+=`<div class="section" id="sectionVerified"><div class="section-title">✅ Verified Tokens <span style="color:#00d4aa;font-size:.8rem;font-weight:400;text-transform:none;letter-spacing:0">— ${fmtUsd(totalUsd)} total</span></div><div class="token-grid">`;
-      for(const b of verified){
-        if(b.symbol==='SOL')continue;
-        html+=tokenCard(b,true);
-      }
+      for(const b of verifiedNonSol) html+=tokenCard(b,true);
       html+='</div></div>';
     }
 
