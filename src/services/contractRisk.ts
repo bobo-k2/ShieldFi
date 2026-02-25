@@ -354,9 +354,11 @@ export async function analyzeWalletRisk(walletAddress: string, balances: any[], 
 }> {
   // Analyze each non-verified token
   const tokenReports: TokenRiskReport[] = [];
-  const mintsToAnalyze = balances
-    .filter(b => b.status !== 'verified' && b.mint !== 'native')
-    .slice(0, 20); // Cap at 20 to avoid rate limits
+  // Prioritize suspicious tokens first, then unknown
+  const nonVerified = balances.filter(b => b.status !== 'verified' && b.mint !== 'native');
+  const suspicious = nonVerified.filter(b => b.status === 'suspicious');
+  const unknown = nonVerified.filter(b => b.status !== 'suspicious');
+  const mintsToAnalyze = [...suspicious, ...unknown].slice(0, 20); // Cap at 20 to avoid rate limits
 
   for (const b of mintsToAnalyze) {
     const report = await analyzeTokenRisk(b.mint);

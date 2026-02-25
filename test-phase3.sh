@@ -147,6 +147,40 @@ reports=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);print(l
 flags_total=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);print(sum(len(r['flags']) for r in d.get('tokenReports',[])))" 2>/dev/null)
 [ "$flags_total" -gt 0 ] && pass "Risk flags found: $flags_total" || warn "No risk flags found"
 
+# Risk summary contains clickable links
+summary=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('summary',''))" 2>/dev/null)
+echo "$summary" | grep -q "solscan.io/token/" && pass "Risk summary contains Solscan links" || fail "Risk summary missing Solscan links"
+
+# Risk summary has separate lines (bullet points)
+echo "$summary" | grep -q "•" && pass "Risk summary has bullet points" || fail "Risk summary missing bullet formatting"
+
+# High-risk tokens named in summary
+echo "$summary" | grep -qi "high-risk" && pass "Summary mentions high-risk tokens" || warn "No high-risk tokens in summary"
+
+# Mint authority tokens named in summary
+echo "$summary" | grep -qi "mint authority" && pass "Summary mentions mint authority tokens" || warn "No mint authority in summary"
+
+echo ""
+
+# ---- SECTION 5b: Fake Token Detection ----
+echo "--- 5b. Fake Token Detection ---"
+# Scan wallet with known fake USDC (6p6xgH...)
+FAKEWALLET="6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN"
+r=$(curl -s --max-time 30 "$BASE/api/approvals/lookup?address=$FAKEWALLET")
+
+# Check that impersonating tokens are prefixed with FAKE
+fake_count=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);print(len([b for b in d.get('balances',[]) if 'FAKE' in b.get('symbol','')]))" 2>/dev/null)
+[ "$fake_count" -gt 0 ] && pass "Fake token prefix applied: $fake_count token(s)" || warn "No FAKE-prefixed tokens (wallet may have changed)"
+
+# Check suspicious tokens have flags
+susp_flags=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);print(sum(len(b.get('flags',[])) for b in d.get('balances',[]) if b.get('status')=='suspicious'))" 2>/dev/null)
+[ "$susp_flags" -gt 0 ] && pass "Suspicious tokens have flags: $susp_flags" || warn "No flags on suspicious tokens"
+
+# Risk analysis also prefixes fake tokens
+r2=$(curl -s --max-time 30 "$BASE/api/risk/wallet?address=$FAKEWALLET")
+fake_in_reports=$(echo "$r2" | python3 -c "import sys,json;d=json.load(sys.stdin);print(len([r for r in d.get('tokenReports',[]) if 'FAKE' in (r.get('symbol','') or '')]))" 2>/dev/null)
+[ "$fake_in_reports" -gt 0 ] && pass "Risk analysis prefixes fake tokens: $fake_in_reports" || warn "No FAKE prefix in risk reports"
+
 echo ""
 
 # ---- SECTION 6: Empty/New Wallet ----
