@@ -548,14 +548,15 @@ function renderLookup(data){
 
 function tokenCard(b,showUsd){
   const icon=b.icon?`<img src="${b.icon}" onerror="this.parentNode.innerHTML='💎'">`:'💎';
-  return `<div class="token-item">
+  const solscanUrl=b.mint&&b.mint!=='native'?`https://solscan.io/token/${b.mint}`:'https://solscan.io/token/So11111111111111111111111111111111111111112';
+  return `<a href="${solscanUrl}" target="_blank" rel="noopener" class="token-item" style="text-decoration:none;color:inherit">
     <div class="token-icon">${icon}</div>
     <div class="token-info">
       <div class="token-symbol">${b.symbol}${b.flags&&b.flags.length?` <span style="font-size:.7rem;color:#ff6644" title="${b.flags.join(', ')}">⚠</span>`:''}</div>
       <div class="token-balance">${fmt(b.balance,4)}</div>
     </div>
     ${showUsd&&b.usdValue?`<div class="token-usd">${fmtUsd(b.usdValue)}</div>`:''}
-  </div>`;
+  </a>`;
 }
 
 /* ---- Transactions ---- */
