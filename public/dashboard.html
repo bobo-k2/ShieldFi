@@ -347,9 +347,22 @@ async function api(path,opts={}){
   return res.json();
 }
 
+function isMobile(){return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)}
+function openInPhantom(){
+  const url=encodeURIComponent(window.location.href);
+  window.location.href=`https://phantom.app/ul/browse/${url}`;
+}
 function getProvider(){
   const p=window.phantom?.solana||window.solana;
-  if(!p?.isPhantom){showError('Phantom wallet not found. Install from phantom.app');return null}
+  if(!p?.isPhantom){
+    if(isMobile()){
+      showError('Opening in Phantom wallet browser…');
+      openInPhantom();
+      return null;
+    }
+    showError('Phantom wallet not found. Install from phantom.app');
+    return null;
+  }
   return p;
 }
 
@@ -834,6 +847,12 @@ if(autoAddr){
   window.addEventListener('DOMContentLoaded',()=>setTimeout(lookupWallet,100));
   // If DOM already loaded
   if(document.readyState!=='loading')setTimeout(lookupWallet,100);
+}
+
+/* Mobile: update connect button if Phantom not available */
+if(isMobile()&&!window.phantom?.solana&&!window.solana){
+  $('connectBtn').textContent='Open in Phantom';
+  $('connectBtn').title='Opens this page in Phantom\'s dApp browser';
 }
 
 /* Close popups on outside click */
