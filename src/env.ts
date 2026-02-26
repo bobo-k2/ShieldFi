@@ -9,4 +9,6 @@ export const env = {
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID || '',
   HELIUS_API_KEY: process.env.HELIUS_API_KEY || '',
   HELIUS_WEBHOOK_SECRET: process.env.HELIUS_WEBHOOK_SECRET || '',
+  WEBHOOK_URL: process.env.WEBHOOK_URL || '',
+  SHIELD_TREASURY: process.env.SHIELD_TREASURY || '',
 } as const;

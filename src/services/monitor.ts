@@ -1,5 +1,6 @@
 import { env } from '../env.js';
 import { resolveTokenNames } from './scanner.js';
+import { rateLimiter } from './rateLimiter.js';
 
 export interface HeliusEnhancedTx {
   signature: string;
@@ -47,6 +48,7 @@ export interface MonitorAlert {
 export async function fetchRecentTransactions(address: string, limit = 10): Promise<HeliusEnhancedTx[]> {
   const url = `https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${env.HELIUS_API_KEY}&limit=${limit}`;
   try {
+    await rateLimiter.acquire();
     const res = await fetch(url);
     if (!res.ok) {
       console.error(`Helius API error for ${address}: ${res.status}`);

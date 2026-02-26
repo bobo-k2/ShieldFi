@@ -6,6 +6,7 @@
  */
 
 import { env } from '../env.js';
+import { rateLimiter } from './rateLimiter.js';
 
 export interface TokenRiskReport {
   mint: string;
@@ -91,6 +92,7 @@ export async function analyzeTokenRisk(mint: string): Promise<TokenRiskReport> {
 
   // Fetch full asset data from Helius DAS
   try {
+    await rateLimiter.acquire();
     const res = await fetch(`https://mainnet.helius-rpc.com/?api-key=${env.HELIUS_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -294,6 +296,7 @@ export async function analyzeSpenderRisk(programAddress: string): Promise<{
 
   // Check if it's a program account via Helius
   try {
+    await rateLimiter.acquire();
     const res = await fetch(`https://mainnet.helius-rpc.com/?api-key=${env.HELIUS_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -17,6 +17,8 @@ import { monitorManager } from './services/monitorManager.js';
 import { startTelegramBot } from './services/telegramBot.js';
 import { transactionRoutes } from './routes/transactions.js';
 import { riskAnalysisRoutes } from './routes/risk-analysis.js';
+import { subscriptionRoutes } from './routes/subscription.js';
+import { rpcProxyRoutes } from './routes/rpc-proxy.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -39,6 +41,8 @@ await app.register(webhookRoutes);
 await app.register(monitorRoutes);
 await app.register(transactionRoutes);
 await app.register(riskAnalysisRoutes);
+await app.register(subscriptionRoutes);
+await app.register(rpcProxyRoutes);
 
 app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
   if (err) {
@@ -48,7 +52,7 @@ app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
   app.log.info(`${APP.name} v${APP.version} listening on ${address}`);
 
   // Start polling monitor
-  monitorManager.start(30000);
+  monitorManager.start(120000); // 2 minutes — reduced from 30s to avoid Helius rate limits
   // Start Telegram bot for /start link commands
   startTelegramBot();
 });

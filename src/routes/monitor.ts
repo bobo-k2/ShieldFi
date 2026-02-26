@@ -20,10 +20,16 @@ function expiryDate(): Date {
 export async function monitorRoutes(app: FastifyInstance) {
   // Expire stale monitors on each request (lightweight — only updates)
   app.addHook('onRequest', async () => {
-    await prisma.monitoredWallet.updateMany({
+    const expired = await prisma.monitoredWallet.findMany({
       where: { isActive: true, expiresAt: { not: null, lt: new Date() } },
-      data: { isActive: false },
     });
+    if (expired.length > 0) {
+      console.log(`[MONITOR] Expiring ${expired.length} wallets:`, expired.map(w => `${w.address.slice(0,8)}... expires=${w.expiresAt?.toISOString()}`));
+      await prisma.monitoredWallet.updateMany({
+        where: { isActive: true, expiresAt: { not: null, lt: new Date() } },
+        data: { isActive: false },
+      });
+    }
   });
 
   // Add wallet to monitoring
@@ -68,6 +74,7 @@ export async function monitorRoutes(app: FastifyInstance) {
   app.delete<{ Params: { address: string } }>('/api/monitor/:address', async (request, reply) => {
     try {
       const { address } = request.params;
+      console.log(`[MONITOR] DELETE request to deactivate: ${address.slice(0,8)}... from IP ${request.ip}`);
       await prisma.monitoredWallet.updateMany({
         where: { address },
         data: { isActive: false },

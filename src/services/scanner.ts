@@ -3,8 +3,17 @@ import { TOKEN_PROGRAM_ID, AccountLayout } from '@solana/spl-token';
 import { prisma } from '../db.js';
 import { env } from '../env.js';
 import { scoreApproval } from './risk.js';
+import { rateLimiter } from './rateLimiter.js';
 
 const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
+const FALLBACK_RPC = 'https://api.mainnet-beta.solana.com';
+
+function getRpcConnection(): Connection {
+  return new Connection(env.SOLANA_RPC_URL, 'confirmed');
+}
+function getFallbackConnection(): Connection {
+  return new Connection(FALLBACK_RPC, 'confirmed');
+}
 
 interface TokenMeta {
   symbol?: string;
@@ -16,7 +25,7 @@ interface TokenMeta {
 // In-memory metadata cache (survives across requests, cleared on restart)
 const metaCache = new Map<string, TokenMeta>();
 
-async function fetchTokenMetadataBatch(mints: string[]): Promise<Map<string, TokenMeta>> {
+async function fetchTokenMetadataBatch(mints: string[], rpcConnection?: Connection): Promise<Map<string, TokenMeta>> {
   const results = new Map<string, TokenMeta>();
   const uncached = mints.filter(m => {
     if (metaCache.has(m)) { results.set(m, metaCache.get(m)!); return false; }
@@ -26,6 +35,7 @@ async function fetchTokenMetadataBatch(mints: string[]): Promise<Map<string, Tok
   if (!uncached.length || !env.HELIUS_API_KEY) return results;
 
   try {
+    await rateLimiter.acquire();
     const res = await fetch(`https://mainnet.helius-rpc.com/?api-key=${env.HELIUS_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -53,6 +63,43 @@ async function fetchTokenMetadataBatch(mints: string[]): Promise<Map<string, Tok
     }
   } catch {
     // Silently fail
+  }
+
+  // DexScreener fallback for tokens missing metadata
+  const needMeta = uncached.filter(m => !results.has(m) || !results.get(m)?.symbol);
+  if (needMeta.length > 0) {
+    console.log(`[SCANNER] Fetching metadata from DexScreener for ${needMeta.length} tokens`);
+    for (const mint of needMeta) {
+      try {
+        const res = await fetch(`https://api.dexscreener.com/tokens/v1/solana/${mint}`);
+        if (res.ok) {
+          const pairs = await res.json() as any[];
+          if (pairs?.length > 0) {
+            const token = pairs[0].baseToken?.address === mint ? pairs[0].baseToken : pairs[0].quoteToken;
+            if (token?.symbol) {
+              // Fetch decimals from on-chain mint account
+              let decimals = results.get(mint)?.decimals ?? 0;
+              if (decimals === 0 && rpcConnection) {
+                try {
+                  const mintInfo = await import('@solana/spl-token').then(m => m.getMint(rpcConnection, new PublicKey(mint)));
+                  decimals = mintInfo.decimals;
+                } catch {}
+              }
+              const meta: TokenMeta = {
+                symbol: token.symbol,
+                icon: pairs[0].info?.imageUrl || undefined,
+                decimals,
+                priceUsd: parseFloat(pairs[0].priceUsd) || undefined,
+              };
+              metaCache.set(mint, meta);
+              results.set(mint, meta);
+            }
+          }
+        }
+      } catch {}
+      // Small delay to avoid DexScreener rate limits
+      await new Promise(r => setTimeout(r, 200));
+    }
   }
 
   for (const m of uncached) {
@@ -147,7 +194,15 @@ async function scanTokenProgram(
 
 // Public lookup — no DB, returns raw results
 export async function lookupWalletApprovals(walletAddress: string) {
-  const connection = new Connection(env.SOLANA_RPC_URL, 'confirmed');
+  let connection: Connection;
+  try {
+    connection = getRpcConnection();
+    // Quick health check — if Helius is rate-limited, fall back immediately
+    await connection.getSlot();
+  } catch {
+    console.log('[SCANNER] Helius RPC unavailable, falling back to public RPC');
+    connection = getFallbackConnection();
+  }
   const owner = new PublicKey(walletAddress);
 
   // Step 1: Collect all token accounts (one RPC call per program)
@@ -155,7 +210,15 @@ export async function lookupWalletApprovals(walletAddress: string) {
   const rawBalances: { mint: string; balance: string }[] = [];
 
   for (const programId of [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID]) {
-    const tokenAccounts = await connection.getTokenAccountsByOwner(owner, { programId });
+    let tokenAccounts;
+    try {
+      tokenAccounts = await connection.getTokenAccountsByOwner(owner, { programId });
+    } catch (e: any) {
+      console.log('[SCANNER] Primary RPC failed, trying alternate:', e?.message?.substring(0, 80));
+      const alt = getFallbackConnection();
+      tokenAccounts = await alt.getTokenAccountsByOwner(owner, { programId });
+      connection = alt; // use fallback for subsequent calls too
+    }
     for (const { account } of tokenAccounts.value) {
       const data = AccountLayout.decode(account.data);
       const mint = new PublicKey(data.mint).toBase58();
@@ -179,7 +242,7 @@ export async function lookupWalletApprovals(walletAddress: string) {
 
   // Step 2: Batch-fetch metadata for ALL unique mints in ONE call
   const allMints = [...new Set([...rawApprovals.map(a => a.mint), ...rawBalances.map(b => b.mint)])];
-  const metaMap = await fetchTokenMetadataBatch(allMints);
+  const metaMap = await fetchTokenMetadataBatch(allMints, connection);
 
   // Step 3: Build results with metadata
   const approvals = rawApprovals.map(a => {
@@ -214,6 +277,7 @@ export async function lookupWalletApprovals(walletAddress: string) {
   // Fallback: get wSOL price from Helius DAS
   if (solPrice == null && env.HELIUS_API_KEY) {
     try {
+      await rateLimiter.acquire();
       const res = await fetch(`https://mainnet.helius-rpc.com/?api-key=${env.HELIUS_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -304,7 +368,9 @@ export async function lookupWalletApprovals(walletAddress: string) {
 }
 
 export async function scanWalletApprovals(walletAddress: string) {
-  const connection = new Connection(env.SOLANA_RPC_URL, 'confirmed');
+  let connection: Connection;
+  try { connection = getRpcConnection(); await connection.getSlot(); }
+  catch { console.log('[SCANNER] Helius RPC unavailable, falling back to public RPC'); connection = getFallbackConnection(); }
   const owner = new PublicKey(walletAddress);
 
   const wallet = await prisma.wallet.findUnique({ where: { address: walletAddress } });

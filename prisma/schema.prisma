@@ -120,3 +120,19 @@ model MonitorAlert {
 
   @@map("monitor_alerts")
 }
+
+model Subscription {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  plan          String
+  status        String   @default("active")
+  txSignature   String?
+  paymentMint   String?
+  amountPaid    Float?
+  startsAt      DateTime @default(now())
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("subscriptions")
+}

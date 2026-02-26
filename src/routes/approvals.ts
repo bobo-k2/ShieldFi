@@ -5,6 +5,7 @@ import { prisma } from '../db.js';
 import { env } from '../env.js';
 import { requireAuth } from '../middleware/auth.js';
 import { scanWalletApprovals, lookupWalletApprovals } from '../services/scanner.js';
+import { scanCache } from '../services/scanCache.js';
 
 // Public routes — no auth
 export async function approvalPublicRoutes(app: FastifyInstance) {
@@ -15,8 +16,16 @@ export async function approvalPublicRoutes(app: FastifyInstance) {
       
       try { new PublicKey(address); } catch { return reply.status(400).send({ error: 'Invalid Solana address' }); }
 
+      // Check cache first
+      const cached = scanCache.get<any>(address);
+      if (cached) {
+        return cached;
+      }
+
       const results = await lookupWalletApprovals(address);
-      return { address, approvals: results.approvals, balances: results.balances, walletScore: results.walletScore };
+      const response = { address, approvals: results.approvals, balances: results.balances, walletScore: results.walletScore };
+      scanCache.set(address, response);
+      return response;
     } catch (err: any) {
       app.log.error(err);
       return reply.status(500).send({ error: 'Lookup failed: ' + err.message });
@@ -82,7 +91,9 @@ export async function approvalRoutes(app: FastifyInstance) {
       });
       if (!approval) return reply.status(404).send({ error: 'Not found' });
 
-      const connection = new Connection(env.SOLANA_RPC_URL, 'confirmed');
+      let connection: Connection;
+      try { connection = new Connection(env.SOLANA_RPC_URL, 'confirmed'); await connection.getSlot(); }
+      catch { connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed'); }
       const ownerPubkey = new PublicKey(approval.wallet.address);
       const mintPubkey = new PublicKey(approval.tokenMint);
 
