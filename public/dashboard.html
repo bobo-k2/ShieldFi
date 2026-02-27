@@ -209,7 +209,7 @@
     <div class="scan-row">
       <input class="scan-input" id="lookupAddr" type="text" placeholder="Paste any Solana address…" autocomplete="off">
       <button class="btn" id="lookupBtn" onclick="lookupWallet()">Scan</button>
-      <button class="btn" id="shareBtn" onclick="shareWallet()" style="display:none;background:#1a1a2e;border:1px solid #333;padding:.5rem .75rem;font-size:.85rem;gap:.3rem;color:#e0e0e0" title="Share on X"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>Share</button>
+      <button class="btn" id="shareBtn" onclick="shareWallet()" style="display:none;background:#1a1a2e;border:1px solid #444;padding:.6rem 1.1rem;font-size:.9rem;color:#e0e0e0;gap:.5rem" title="Share on X"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>Share</span></button>
     </div>
   </div>
 
@@ -553,7 +553,7 @@ async function lookupWallet(){
     if(!res.ok){const e=await res.json();throw new Error(e.error||'Lookup failed')}
     const data=await res.json();
     renderLookup(data);
-    $('shareBtn').style.display='inline-block';
+    $('shareBtn').style.display='inline-flex';
     // Update URL to shareable path without reload
     if(!walletPathMatch)history.replaceState(null,'','/wallet/'+encodeURIComponent(addr));
     $('monitorSection').style.display='block';
