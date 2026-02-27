@@ -209,7 +209,7 @@
     <div class="scan-row">
       <input class="scan-input" id="lookupAddr" type="text" placeholder="Paste any Solana address…" autocomplete="off">
       <button class="btn" id="lookupBtn" onclick="lookupWallet()">Scan</button>
-      <button class="btn" id="shareBtn" onclick="shareWallet()" style="display:none;background:#1a1a2e;border:1px solid #333;padding:.5rem .75rem;font-size:.85rem" title="Copy shareable link">🔗 Share</button>
+      <button class="btn" id="shareBtn" onclick="shareWallet()" style="display:none;background:#1a1a2e;border:1px solid #333;padding:.5rem .75rem;font-size:.85rem;gap:.3rem" title="Copy shareable link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>Share</button>
     </div>
   </div>
 
@@ -897,8 +897,8 @@ function shareWallet(){
   if(!addr)return;
   const url='https://shieldfi.app/wallet/'+encodeURIComponent(addr);
   navigator.clipboard.writeText(url).then(()=>{
-    $('shareBtn').textContent='✅ Copied!';
-    setTimeout(()=>{$('shareBtn').textContent='🔗 Share'},2000);
+    $('shareBtn').innerHTML='✅ Copied!';
+    setTimeout(()=>{$('shareBtn').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>Share'},2000);
   }).catch(()=>{prompt('Copy this link:',url)});
   trackEvent('share',addr);
 }
