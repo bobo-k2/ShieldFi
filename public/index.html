@@ -18,8 +18,10 @@
 <link rel="icon" type="image/jpeg" href="/logo.jpg">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#e0e0e0;line-height:1.6;overflow-x:hidden}
+  html{scroll-behavior:smooth;overflow-x:hidden}
+  @supports(scrollbar-width:thin){html{scrollbar-width:thin}}
+  *,*::before,*::after{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#e0e0e0;line-height:1.6;overflow-x:hidden;margin:0}
 
   /* Grid background */
   body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:64px 64px;pointer-events:none;z-index:0}
@@ -39,8 +41,8 @@
 
   /* Hero */
   .hero{min-height:100vh;display:flex;align-items:center;padding-top:5rem}
-  .hero-content{width:100%;text-align:center}
-  .hero h1{font-size:clamp(2.5rem,6vw,4rem);font-weight:800;letter-spacing:-.02em;margin-bottom:.75rem;line-height:1.1}
+  .hero-content{width:100%;max-width:100%;text-align:center;overflow:hidden}
+  .hero h1{font-size:clamp(1.75rem,5vw,4rem);font-weight:800;letter-spacing:-.02em;margin-bottom:.75rem;line-height:1.1}
   .hero h1 .gradient{background:linear-gradient(135deg,#00d4aa,#7b61ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
   .hero .subtitle{font-size:clamp(1rem,2.5vw,1.35rem);color:#888;max-width:560px;margin:0 auto 2.5rem}
 
@@ -93,11 +95,18 @@
 
   /* Responsive */
   @media(max-width:768px){
-    nav{padding:.75rem 1rem}
-    section{padding:4rem 1.5rem}
+    nav{padding:.75rem .75rem;overflow:hidden}
+    nav .btn-sm{padding:6px 14px;font-size:.75rem;white-space:nowrap}
+    nav .nav-logo img{height:32px}
+    nav .nav-logo{font-size:1rem;gap:.4rem}
+    section{padding:3rem 1.25rem}
     .features-grid{grid-template-columns:1fr}
     .steps{grid-template-columns:1fr;gap:1.5rem}
-    .hero{min-height:auto;padding-top:7rem;padding-bottom:2rem}
+    .hero{min-height:auto;padding-top:5.5rem;padding-bottom:2rem}
+    .hero h1{font-size:1.5rem;padding:0 .25rem}
+    .hero .subtitle{font-size:.9rem;padding:0 .25rem}
+    .scan-box{max-width:100%}
+    .scan-box input{font-size:.85rem;padding:14px 100px 14px 14px}
   }
   @media(min-width:769px) and (max-width:1024px){
     .features-grid{grid-template-columns:repeat(2,1fr)}
