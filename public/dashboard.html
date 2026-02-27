@@ -336,18 +336,28 @@ function collapsibleTitle(title,extra=''){return `<div class="section-title" sty
 
 function showSkeleton(){
   $('cards').style.display='grid';
-  $('riskLevel').textContent='⏳';$('tokenCount').textContent='…';$('suspiciousCount').textContent='…';
+  // Skeleton stat cards
+  const riskCard=$('riskCard');riskCard.className='stat-card';
+  $('riskLevel').innerHTML='<div class="skeleton" style="height:32px;width:80px;margin-top:4px"></div>';
+  $('tokenCount').innerHTML='<div class="skeleton" style="height:32px;width:50px;margin-top:4px"></div>';
+  $('suspiciousCount').innerHTML='<div class="skeleton" style="height:32px;width:40px;margin-top:4px"></div>';
+  const sCard=$('suspiciousCard');if(sCard)sCard.className='stat-card';
+  // Skeleton content
   $('content').innerHTML=`
-    <div class="skeleton h-card" style="margin-bottom:1.5rem"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem">
-      <div class="skeleton" style="height:80px;border-radius:10px"></div>
-      <div class="skeleton" style="height:80px;border-radius:10px"></div>
-      <div class="skeleton" style="height:80px;border-radius:10px"></div>
-      <div class="skeleton" style="height:80px;border-radius:10px"></div>
+    <div class="card" style="padding:1.5rem;margin-bottom:1.5rem">
+      <div class="skeleton" style="height:16px;width:180px;margin-bottom:1rem"></div>
+      <div class="skeleton" style="height:44px;margin-bottom:.75rem"></div>
+      <div style="display:flex;gap:.75rem"><div class="skeleton" style="height:12px;width:100px"></div><div class="skeleton" style="height:12px;width:80px"></div></div>
     </div>
-    <div class="skeleton" style="height:60px;border-radius:10px;margin-bottom:.5rem"></div>
-    <div class="skeleton" style="height:60px;border-radius:10px;margin-bottom:.5rem"></div>
-    <div class="skeleton" style="height:60px;border-radius:10px"></div>`;
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem">
+      <div class="skeleton" style="height:90px;border-radius:12px"></div>
+      <div class="skeleton" style="height:90px;border-radius:12px"></div>
+      <div class="skeleton" style="height:90px;border-radius:12px"></div>
+      <div class="skeleton" style="height:90px;border-radius:12px"></div>
+    </div>
+    <div class="skeleton" style="height:70px;border-radius:12px;margin-bottom:.75rem"></div>
+    <div class="skeleton" style="height:70px;border-radius:12px;margin-bottom:.75rem"></div>
+    <div class="skeleton" style="height:70px;border-radius:12px"></div>`;
 }
 
 function setRiskLevel(level){
@@ -557,7 +567,7 @@ async function lookupWallet(){
   trackEvent('lookup',addr);
   currentLookupAddr=addr;lastLookupAddr=addr;
   showSkeleton();
-  $('lookupBtn').disabled=true;$('lookupBtn').textContent='⏳ Scanning…';
+  $('lookupBtn').disabled=true;$('lookupBtn').innerHTML='<span class="spinner"></span> Scanning…';
 
   try{
     const res=await fetch(`/api/approvals/lookup?address=${encodeURIComponent(addr)}`);
