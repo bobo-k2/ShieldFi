@@ -179,15 +179,14 @@
     <div style="position:relative;display:inline-block" id="walletWrap">
       <span class="wallet-pill" id="walletDisplay" style="display:none;cursor:pointer" onclick="toggleWalletMenu()" title="Click for options"></span>
       <div id="walletMenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden;min-width:150px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.5)">
-        <button onclick="copyAddr(document.getElementById('walletDisplay').dataset.full);hideWalletMenu()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;color:#ccc;text-align:left;cursor:pointer;font-size:.85rem;border-bottom:1px solid rgba(255,255,255,.06);" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background='none'">📋 Copy Address</button>
-        <button onclick="disconnect();hideWalletMenu()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;color:#ff4444;text-align:left;cursor:pointer;font-size:.85rem" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background='none'">🔌 Disconnect</button>
+        <button onclick="copyAddr(document.getElementById('walletDisplay').dataset.full);hideWalletMenu()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;color:#ccc;text-align:left;cursor:pointer;font-size:.85rem;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background='none'">Copy Address</button>
+        <button onclick="disconnect();hideWalletMenu()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;color:#ff4444;text-align:left;cursor:pointer;font-size:.85rem;white-space:nowrap" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background='none'">Disconnect</button>
       </div>
     </div>
     <button class="btn btn-sm" id="connectBtn" onclick="connect()">Connect Wallet</button>
-    <button id="disconnectBtn" style="display:none"></button>
-    <input type="hidden" id="scanBtn">
   </div>
 </nav>
+<div style="display:none"><button id="disconnectBtn"></button><input type="hidden" id="scanBtn"></div>
 
 <div class="toast-container" id="toasts"></div>
 
