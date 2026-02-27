@@ -209,6 +209,7 @@
     <div class="scan-row">
       <input class="scan-input" id="lookupAddr" type="text" placeholder="Paste any Solana address…" autocomplete="off">
       <button class="btn" id="lookupBtn" onclick="lookupWallet()">Scan</button>
+      <button class="btn" id="shareBtn" onclick="shareWallet()" style="display:none;background:#1a1a2e;border:1px solid #333;padding:.5rem .75rem;font-size:.85rem" title="Copy shareable link">🔗 Share</button>
     </div>
   </div>
 
@@ -552,6 +553,9 @@ async function lookupWallet(){
     if(!res.ok){const e=await res.json();throw new Error(e.error||'Lookup failed')}
     const data=await res.json();
     renderLookup(data);
+    $('shareBtn').style.display='inline-block';
+    // Update URL to shareable path without reload
+    if(!walletPathMatch)history.replaceState(null,'','/wallet/'+encodeURIComponent(addr));
     $('monitorSection').style.display='block';
     $('riskAnalysis').style.display='block';
     checkMonitorStatus(addr);
@@ -887,13 +891,25 @@ function renderRiskAnalysis(data){
   $('tokenReports').innerHTML=html;
 }
 
-/* ---- URL param auto-scan ---- */
+/* ---- Share wallet link ---- */
+function shareWallet(){
+  const addr=$('lookupAddr').value.trim();
+  if(!addr)return;
+  const url='https://shieldfi.app/wallet/'+encodeURIComponent(addr);
+  navigator.clipboard.writeText(url).then(()=>{
+    $('shareBtn').textContent='✅ Copied!';
+    setTimeout(()=>{$('shareBtn').textContent='🔗 Share'},2000);
+  }).catch(()=>{prompt('Copy this link:',url)});
+  trackEvent('share',addr);
+}
+
+/* ---- URL param / path auto-scan ---- */
 const urlParams=new URLSearchParams(window.location.search);
-const autoAddr=urlParams.get('address');
+const walletPathMatch=window.location.pathname.match(/^\/wallet\/([A-Za-z0-9]+)$/);
+const autoAddr=walletPathMatch?walletPathMatch[1]:urlParams.get('address');
 if(autoAddr){
   $('lookupAddr').value=autoAddr;
   window.addEventListener('DOMContentLoaded',()=>setTimeout(lookupWallet,100));
-  // If DOM already loaded
   if(document.readyState!=='loading')setTimeout(lookupWallet,100);
 }
 

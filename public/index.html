@@ -200,7 +200,7 @@ function goScan(from){
   const id = from==='bottom' ? 'bottomAddr' : 'heroAddr';
   const addr = document.getElementById(id).value.trim();
   if(!addr){document.getElementById(id).focus();return}
-  window.location.href='/dashboard.html?address='+encodeURIComponent(addr);
+  window.location.href='/wallet/'+encodeURIComponent(addr);
 }
 // Enter key
 document.getElementById('heroAddr').addEventListener('keydown',e=>{if(e.key==='Enter')goScan()});

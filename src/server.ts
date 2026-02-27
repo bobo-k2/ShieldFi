@@ -4,6 +4,7 @@ import jwt from '@fastify/jwt';
 import fstatic from '@fastify/static';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { readFileSync } from 'fs';
 import { APP } from './config.js';
 import { env } from './env.js';
 import { healthRoutes } from './routes/health.js';
@@ -45,6 +46,27 @@ await app.register(riskAnalysisRoutes);
 await app.register(subscriptionRoutes);
 await app.register(rpcProxyRoutes);
 await app.register(analyticsRoutes);
+
+/* ---- Shareable wallet scan route: /wallet/:address ---- */
+const dashboardHtml = readFileSync(join(__dirname, '..', 'public', 'dashboard.html'), 'utf-8');
+
+app.get<{ Params: { address: string } }>('/wallet/:address', async (req, reply) => {
+  const { address } = req.params;
+  const short = address.length > 8 ? `${address.slice(0, 4)}...${address.slice(-4)}` : address;
+
+  const ogTitle = `ShieldFi Scan: ${short}`;
+  const ogDesc = `View Solana wallet security scan results on ShieldFi`;
+  const ogUrl = `https://shieldfi.app/wallet/${address}`;
+
+  const injected = dashboardHtml
+    .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${ogTitle}">`)
+    .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${ogDesc}">`)
+    .replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${ogUrl}">`)
+    .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${ogTitle}">`)
+    .replace(/<title>[^<]*<\/title>/, `<title>${ogTitle} — ShieldFi</title>`);
+
+  reply.type('text/html').send(injected);
+});
 
 app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
   if (err) {
