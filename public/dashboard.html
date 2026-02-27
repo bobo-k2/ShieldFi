@@ -143,8 +143,10 @@
 
   /* Responsive */
   @media(max-width:640px){
-    .topnav{padding:.5rem .75rem;flex-wrap:wrap;gap:.5rem}
-    .nav-right{gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+    .topnav{padding:.5rem .75rem;flex-direction:column;gap:.5rem;align-items:stretch}
+    .nav-logo{text-align:center;font-size:1rem}
+    .nav-logo img{height:32px}
+    .nav-right{gap:.4rem;flex-wrap:wrap;justify-content:center}
     .nav-right .btn-sm{padding:6px 12px;font-size:.75rem}
     .wallet-pill{font-size:.7rem;padding:4px 8px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .container{padding:.75rem}
