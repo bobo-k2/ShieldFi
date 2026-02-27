@@ -54,10 +54,15 @@
 
   /* Cards */
   .stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
-  .stat-card{background:#111118;border:1px solid #1a1a2e;border-radius:12px;padding:1.25rem;transition:border-color .2s}
-  .stat-card:hover{border-color:rgba(0,212,170,.2)}
-  .stat-label{font-size:.75rem;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem}
-  .stat-value{font-size:1.75rem;font-weight:700}
+  .stat-card{background:#111118;border:1px solid #1a1a2e;border-radius:12px;padding:1.25rem;transition:border-color .2s,box-shadow .2s}
+  .stat-card:hover{border-color:rgba(0,212,170,.2);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+  .stat-card .stat-icon{font-size:1.5rem;margin-bottom:.5rem;display:block}
+  .stat-card.risk-safe{border-color:rgba(0,212,170,.25);background:linear-gradient(135deg,rgba(0,212,170,.06),transparent)}
+  .stat-card.risk-medium{border-color:rgba(255,167,38,.25);background:linear-gradient(135deg,rgba(255,167,38,.06),transparent)}
+  .stat-card.risk-high{border-color:rgba(255,102,68,.25);background:linear-gradient(135deg,rgba(255,102,68,.06),transparent)}
+  .stat-card.risk-critical{border-color:rgba(255,34,68,.25);background:linear-gradient(135deg,rgba(255,34,68,.06),transparent)}
+  .stat-label{font-size:.7rem;color:#666;text-transform:uppercase;letter-spacing:.8px;margin-bottom:.4rem}
+  .stat-value{font-size:2rem;font-weight:800;letter-spacing:-.02em}
   .score-good{color:#00d4aa}
   .score-warn{color:#ffaa00}
   .score-bad{color:#ff4444}
@@ -164,9 +169,10 @@
     .scan-section{padding:1rem;margin-bottom:1rem}
     .scan-row{flex-direction:column}
     .stat-cards{grid-template-columns:1fr;gap:.5rem;margin-bottom:1rem}
-    .stat-card{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between}
-    .stat-card .stat-label{margin-bottom:0;font-size:.7rem}
-    .stat-card .stat-value{font-size:1.2rem;text-align:right}
+    .stat-card{padding:.75rem 1rem;display:flex;flex-wrap:wrap;align-items:center;gap:0 .75rem}
+    .stat-card .stat-icon{font-size:1.2rem;margin-bottom:0}
+    .stat-card .stat-label{margin-bottom:0;font-size:.7rem;flex:1}
+    .stat-card .stat-value{font-size:1.3rem;text-align:right}
     .token-grid{grid-template-columns:1fr}
     .token-item{padding:.6rem .75rem}
     .sol-hero .amount{font-size:1.8rem}
@@ -215,7 +221,7 @@
 
   <!-- Stat Cards -->
   <div class="stat-cards" id="cards" style="display:none">
-    <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('riskAnalysis')?.scrollIntoView({behavior:'smooth',block:'start'})"><div class="stat-label">Risk Level <span class="info-icon" onclick="event.stopPropagation();document.getElementById('riskInfo').style.display=document.getElementById('riskInfo').style.display==='block'?'none':'block'" title="Risk levels info">ℹ️</span></div><div class="stat-value" id="riskLevel">—</div>
+    <div class="stat-card" id="riskCard" style="cursor:pointer" onclick="document.getElementById('riskAnalysis')?.scrollIntoView({behavior:'smooth',block:'start'})"><span class="stat-icon">🛡️</span><div class="stat-label">Risk Level <span class="info-icon" onclick="event.stopPropagation();document.getElementById('riskInfo').style.display=document.getElementById('riskInfo').style.display==='block'?'none':'block'" title="Risk levels info">ℹ️</span></div><div class="stat-value" id="riskLevel">—</div>
       <div id="riskInfo" class="info-popup" style="display:none">
         <div style="font-size:.8rem;font-weight:600;margin-bottom:6px;color:#fff">Risk Levels</div>
         <div style="display:flex;flex-direction:column;gap:4px;font-size:.75rem">
@@ -227,8 +233,8 @@
         </div>
       </div>
     </div>
-    <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('sectionVerified')?.scrollIntoView({behavior:'smooth',block:'start'})"><div class="stat-label">Total Tokens</div><div class="stat-value" id="tokenCount">—</div></div>
-    <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('sectionSuspicious')?.scrollIntoView({behavior:'smooth',block:'start'})"><div class="stat-label">Suspicious</div><div class="stat-value" id="suspiciousCount">—</div></div>
+    <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('sectionVerified')?.scrollIntoView({behavior:'smooth',block:'start'})"><span class="stat-icon">🪙</span><div class="stat-label">Total Tokens</div><div class="stat-value" id="tokenCount">—</div></div>
+    <div class="stat-card" id="suspiciousCard" style="cursor:pointer" onclick="document.getElementById('sectionSuspicious')?.scrollIntoView({behavior:'smooth',block:'start'})"><span class="stat-icon">⚠️</span><div class="stat-label">Suspicious</div><div class="stat-value" id="suspiciousCount">—</div></div>
   </div>
 
   <!-- Monitor Section (hidden initially) — TOP FEATURE -->
@@ -346,9 +352,12 @@ function showSkeleton(){
 
 function setRiskLevel(level){
   const el=$('riskLevel');
+  const card=$('riskCard');
   const colors={SAFE:'#00d4aa',LOW:'#00d4aa',MEDIUM:'#ffa726',HIGH:'#ff6644',CRITICAL:'#ff2244'};
+  const classes={SAFE:'risk-safe',LOW:'risk-safe',MEDIUM:'risk-medium',HIGH:'risk-high',CRITICAL:'risk-critical'};
   const c=colors[level]||'#888';
-  el.innerHTML=`<span style="color:${c};font-weight:700">${level||'—'}</span>`;
+  el.innerHTML=`<span style="color:${c};font-weight:800">${level||'—'}</span>`;
+  card.className='stat-card '+(classes[level]||'');
 }
 function setTokenStats(balances){
   const spl=(balances||[]).filter(b=>b.symbol!=='SOL');
@@ -360,6 +369,8 @@ function setTokenStats(balances){
   const el=$('suspiciousCount');
   el.textContent=suspicious.toString();
   el.className='stat-value '+(suspicious===0?'score-good':suspicious<=2?'score-warn':'score-bad');
+  const sCard=$('suspiciousCard');
+  if(sCard)sCard.className='stat-card '+(suspicious===0?'risk-safe':suspicious<=2?'risk-medium':'risk-critical');
 }
 
 /* Base58 */
