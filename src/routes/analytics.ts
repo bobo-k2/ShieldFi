@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../db.js';
 
 const VALID_TYPES = ['scan', 'connect', 'lookup', 'page_view'];
-const RATE_LIMIT_MS = 2_000;
+const RATE_LIMIT_MS = 10_000;
 const recentEvents = new Map<string, number>(); // key: ip:type -> timestamp
 
 // Cleanup old entries every 60s
