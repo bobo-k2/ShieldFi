@@ -36,7 +36,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
     });
 
     // Invalidate stats cache on scan events so counter updates immediately
-    if (type === 'scan') statsCache = null;
+    if (type === 'scan' || type === 'lookup') statsCache = null;
 
     return { ok: true };
   });
@@ -49,12 +49,11 @@ export async function analyticsRoutes(app: FastifyInstance) {
 
     const twentyFourHoursAgo = new Date(now - 86_400_000);
 
+    const scanTypes = { type: { in: ['scan', 'lookup'] } };
     const [totalScans, totalWallets, scanLast24h] = await Promise.all([
-      prisma.event.count({ where: { type: 'scan' } }),
-      prisma.event.count({ where: { type: 'scan' }, select: { address: true } }).then(() =>
-        prisma.event.groupBy({ by: ['address'], where: { type: 'scan', address: { not: null } } }).then(r => r.length)
-      ),
-      prisma.event.count({ where: { type: 'scan', createdAt: { gte: twentyFourHoursAgo } } }),
+      prisma.event.count({ where: scanTypes }),
+      prisma.event.groupBy({ by: ['address'], where: { ...scanTypes, address: { not: null } } }).then(r => r.length),
+      prisma.event.count({ where: { ...scanTypes, createdAt: { gte: twentyFourHoursAgo } } }),
     ]);
 
     const data = { totalScans, totalWallets, scanLast24h };
