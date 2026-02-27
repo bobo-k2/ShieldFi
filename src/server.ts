@@ -19,6 +19,7 @@ import { transactionRoutes } from './routes/transactions.js';
 import { riskAnalysisRoutes } from './routes/risk-analysis.js';
 import { subscriptionRoutes } from './routes/subscription.js';
 import { rpcProxyRoutes } from './routes/rpc-proxy.js';
+import { analyticsRoutes } from './routes/analytics.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -43,6 +44,7 @@ await app.register(transactionRoutes);
 await app.register(riskAnalysisRoutes);
 await app.register(subscriptionRoutes);
 await app.register(rpcProxyRoutes);
+await app.register(analyticsRoutes);
 
 app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
   if (err) {

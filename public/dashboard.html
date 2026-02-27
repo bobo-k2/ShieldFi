@@ -386,9 +386,11 @@ function getProvider(){
   return p;
 }
 
+function trackEvent(type,address){fetch('/api/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,address})}).catch(()=>{});}
 async function connect(){
   const provider=getProvider();if(!provider)return;
   try{
+    trackEvent('connect');
     $('connectBtn').disabled=true;$('connectBtn').textContent='Connecting…';
     const resp=await provider.connect();
     walletAddr=resp.publicKey.toString();
@@ -458,6 +460,7 @@ function disconnect(){
 }
 
 async function scan(){
+  trackEvent('scan',walletAddr);
   $('scanBtn').disabled=true;$('scanBtn').textContent='⏳ Scanning…';
   showSkeleton();
   try{
@@ -528,6 +531,7 @@ let hasUnknownOrSuspicious=false;
 async function lookupWallet(){
   const addr=$('lookupAddr').value.trim();
   if(!addr)return showError('Paste a Solana address first');
+  trackEvent('lookup',addr);
   currentLookupAddr=addr;lastLookupAddr=addr;
   showSkeleton();
   $('lookupBtn').disabled=true;$('lookupBtn').textContent='⏳ Scanning…';

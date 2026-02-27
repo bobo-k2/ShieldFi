@@ -121,6 +121,19 @@ model MonitorAlert {
   @@map("monitor_alerts")
 }
 
+model Event {
+  id        String   @id @default(cuid())
+  type      String   // scan, connect, lookup, page_view
+  address   String?
+  metadata  String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([type])
+  @@index([createdAt])
+  @@map("events")
+}
+
 model Subscription {
   id            String   @id @default(cuid())
   walletAddress String   @unique

@@ -117,8 +117,16 @@
       <button class="btn btn-sm" onclick="goScan()">Scan →</button>
     </div>
     <p class="secondary-cta">or <a href="/dashboard.html">Connect Phantom Wallet</a></p>
+    <p id="scanCounter" style="margin-top:1.25rem;font-size:1.05rem;color:#00d4aa;font-weight:600;opacity:0;transition:opacity .5s"></p>
   </div>
 </section>
+<script>
+fetch('/api/stats').then(r=>r.json()).then(d=>{
+  const el=document.getElementById('scanCounter');
+  if(d.totalScans!=null){el.textContent='🔍 '+d.totalScans.toLocaleString()+' wallets scanned';el.style.opacity='1';}
+}).catch(()=>{});
+fetch('/api/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'page_view'})}).catch(()=>{});
+</script>
 
 <div class="trust-bar fade-in">
   <p><span>✦</span> Scan any Solana wallet — no signup, no connection required <span>✦</span></p>
