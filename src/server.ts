@@ -21,6 +21,7 @@ import { riskAnalysisRoutes } from './routes/risk-analysis.js';
 import { subscriptionRoutes } from './routes/subscription.js';
 import { rpcProxyRoutes } from './routes/rpc-proxy.js';
 import { analyticsRoutes } from './routes/analytics.js';
+import { privateRoutes } from './routes/private.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -46,6 +47,7 @@ await app.register(riskAnalysisRoutes);
 await app.register(subscriptionRoutes);
 await app.register(rpcProxyRoutes);
 await app.register(analyticsRoutes);
+await app.register(privateRoutes);
 
 /* ---- Shareable wallet scan route: /wallet/:address ---- */
 const dashboardHtml = readFileSync(join(__dirname, '..', 'public', 'dashboard.html'), 'utf-8');
