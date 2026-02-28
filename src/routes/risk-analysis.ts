@@ -34,11 +34,21 @@ export async function riskAnalysisRoutes(app: FastifyInstance) {
         walletData.approvals,
       );
 
-      return {
+      const response: any = {
         address,
         ...analysis,
       };
+      if (walletData.truncated) {
+        response.truncated = true;
+        response.totalTokens = walletData.totalTokens;
+        response.hiddenVerified = walletData.hiddenVerified;
+      }
+      return response;
     } catch (err: any) {
+      const msg = (err?.message || '').toLowerCase();
+      if (msg.includes('exceeded') || msg.includes('too large') || msg.includes('too many request')) {
+        return reply.status(422).send({ error: 'This wallet holds too many tokens to scan. Try a smaller wallet.', walletTooLarge: true });
+      }
       app.log.error(err);
       return reply.status(500).send({ error: 'Analysis failed: ' + err.message });
     }

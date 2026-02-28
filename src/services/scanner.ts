@@ -278,9 +278,18 @@ export async function lookupWalletApprovals(walletAddress: string) {
       tokenAccounts = await connection.getTokenAccountsByOwner(owner, { programId });
     } catch (e: any) {
       console.log('[SCANNER] Primary RPC failed, trying alternate:', e?.message?.substring(0, 80));
-      const alt = getFallbackConnection();
-      tokenAccounts = await alt.getTokenAccountsByOwner(owner, { programId });
-      connection = alt; // use fallback for subsequent calls too
+      try {
+        const alt = getFallbackConnection();
+        tokenAccounts = await alt.getTokenAccountsByOwner(owner, { programId });
+        connection = alt; // use fallback for subsequent calls too
+      } catch (e2: any) {
+        const msg = (e2?.message || '').toLowerCase();
+        if (msg.includes('exceeded') || msg.includes('too large') || msg.includes('limit')) {
+          console.log('[SCANNER] Wallet too large for RPC, returning partial results');
+          continue; // skip this program, return what we have
+        }
+        throw e2;
+      }
     }
     for (const { account } of tokenAccounts.value) {
       const data = AccountLayout.decode(account.data);

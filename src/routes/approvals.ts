@@ -27,6 +27,10 @@ export async function approvalPublicRoutes(app: FastifyInstance) {
       scanCache.set(address, response);
       return response;
     } catch (err: any) {
+      const msg = (err?.message || '').toLowerCase();
+      if (msg.includes('exceeded') || msg.includes('too large') || msg.includes('too many request')) {
+        return reply.status(422).send({ error: 'This wallet holds too many tokens to scan. Try a smaller wallet.', walletTooLarge: true });
+      }
       app.log.error(err);
       return reply.status(500).send({ error: 'Lookup failed: ' + err.message });
     }

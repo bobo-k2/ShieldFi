@@ -298,6 +298,52 @@ echo "$r" | grep -qi "unauthorized\|error\|invalid" && pass "Rejects fake JWT" |
 
 echo ""
 
+# ---- SECTION 11: Large Wallet Mode ----
+echo "--- 11. Large Wallet Mode ---"
+LARGE="GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
+
+# Test 1: Large wallet returns truncated response
+r=$(curl -s --max-time 60 "$BASE/api/risk/wallet?address=$LARGE")
+truncated=$(echo "$r" | python3 -c "import sys,json;print(json.load(sys.stdin).get('truncated',False))" 2>/dev/null)
+[ "$truncated" = "True" ] && pass "Large wallet: truncated=true" || fail "Large wallet: expected truncated=true, got $truncated"
+
+total_tokens=$(echo "$r" | python3 -c "import sys,json;print(json.load(sys.stdin).get('totalTokens',0))" 2>/dev/null)
+[ "$total_tokens" -gt 50 ] && pass "Large wallet: totalTokens=$total_tokens (>50)" || fail "Large wallet: totalTokens=$total_tokens not >50"
+
+hidden=$(echo "$r" | python3 -c "import sys,json;print(json.load(sys.stdin).get('hiddenVerified',0))" 2>/dev/null)
+[ "$hidden" -gt 0 ] && pass "Large wallet: hiddenVerified=$hidden (>0)" || fail "Large wallet: hiddenVerified=$hidden not >0"
+
+# Test 2: Normal small wallet does NOT have truncated
+r2=$(curl -s --max-time 30 "$BASE/api/risk/wallet?address=$BOT")
+truncated2=$(echo "$r2" | python3 -c "import sys,json;d=json.load(sys.stdin);print('yes' if 'truncated' in d else 'no')" 2>/dev/null)
+[ "$truncated2" = "no" ] && pass "Small wallet: no truncated field" || fail "Small wallet: unexpected truncated field"
+
+# Test 3: Large wallet still includes suspicious/unknown tokens
+reports=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);print(len(d.get('tokenReports',[])))" 2>/dev/null)
+[ "$reports" -gt 0 ] && pass "Large wallet: still has tokenReports=$reports" || fail "Large wallet: no tokenReports in truncated response"
+
+non_safe=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);print(len([r for r in d.get('tokenReports',[]) if r.get('level','') != 'SAFE']))" 2>/dev/null)
+[ "$non_safe" -gt 0 ] && pass "Large wallet: includes non-SAFE tokens=$non_safe" || warn "Large wallet: all tokenReports are SAFE"
+
+# Test 4: Verified tokens have correct metadata from lookup table
+# Check via approvals/lookup on bot wallet (has verified tokens with metadata)
+r3=$(curl -s --max-time 20 "$BASE/api/approvals/lookup?address=$BOT")
+usdc_sym=$(echo "$r3" | python3 -c "
+import sys,json;d=json.load(sys.stdin)
+usdc=[b for b in d['balances'] if b.get('mint')=='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v']
+print(usdc[0]['symbol'] if usdc else 'MISSING')
+" 2>/dev/null)
+[ "$usdc_sym" = "USDC" ] && pass "Verified meta: USDC symbol correct" || warn "Verified meta: USDC not in bot wallet ($usdc_sym)"
+
+# Verified token risk endpoint returns SAFE level
+usdc_level=$(curl -s "$BASE/api/risk/token/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" | python3 -c "import sys,json;print(json.load(sys.stdin).get('level','?'))" 2>/dev/null)
+[ "$usdc_level" = "SAFE" ] && pass "Verified meta: USDC level SAFE" || fail "Verified meta: USDC level wrong ($usdc_level)"
+
+bonk_level=$(curl -s "$BASE/api/risk/token/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263" | python3 -c "import sys,json;print(json.load(sys.stdin).get('level','?'))" 2>/dev/null)
+[ "$bonk_level" = "SAFE" ] && pass "Verified meta: BONK level SAFE" || fail "Verified meta: BONK level wrong ($bonk_level)"
+
+echo ""
+
 # ---- SUMMARY ----
 echo "========================================="
 echo "RESULTS: ✅ $PASS passed | ❌ $FAIL failed | ⚠️  $WARN warnings"
