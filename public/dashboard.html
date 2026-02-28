@@ -593,6 +593,18 @@ function renderLookup(data){
   hasUnknownOrSuspicious=false;
   let html='';
 
+  // Large wallet truncation banner
+  if(data.truncated){
+    const shown=(data.balances||[]).filter(b=>b.status!=='verified').length;
+    html+=`<div style="background:linear-gradient(135deg,#1a1a2e,#111118);border:1px solid #7b61ff;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem">
+      <span style="font-size:1.5rem">🐋</span>
+      <div>
+        <div style="font-weight:600;color:#7b61ff;font-size:.95rem">Large Wallet Detected</div>
+        <div style="color:#aaa;font-size:.82rem">Showing ${data.totalTokens-data.hiddenVerified} suspicious/unknown tokens. ${data.hiddenVerified} verified tokens hidden (wallet too large to display all).</div>
+      </div>
+    </div>`;
+  }
+
   // Token balances
   if(data.balances&&data.balances.length>0){
     const verified=data.balances.filter(b=>b.status==='verified');

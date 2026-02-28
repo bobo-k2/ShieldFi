@@ -22,6 +22,61 @@ interface TokenMeta {
   priceUsd?: number;
 }
 
+// Large wallet threshold — if unique mints exceed this, use large wallet mode
+const LARGE_WALLET_THRESHOLD = 50;
+
+// Top ~50 verified Solana token mints with hardcoded metadata
+const VERIFIED_TOKEN_META: Record<string, TokenMeta> = {
+  'So11111111111111111111111111111111111111112':  { symbol: 'SOL',    decimals: 9,  icon: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png' },
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol: 'USDC',   decimals: 6 },
+  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol: 'USDT',   decimals: 6 },
+  'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { symbol: 'BONK',   decimals: 5 },
+  'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN':  { symbol: 'JUP',    decimals: 6 },
+  'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm': { symbol: 'WIF',    decimals: 6 },
+  'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3': { symbol: 'PYTH',   decimals: 6 },
+  'jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL':  { symbol: 'JTO',    decimals: 9 },
+  'rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof':  { symbol: 'RNDR',   decimals: 8 },
+  'hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux':  { symbol: 'HNT',    decimals: 8 },
+  '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs': { symbol: 'WETH',   decimals: 8 },
+  '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh': { symbol: 'WBTC',   decimals: 8 },
+  'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So':  { symbol: 'mSOL',   decimals: 9 },
+  '7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj': { symbol: 'stSOL',  decimals: 9 },
+  'bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1':  { symbol: 'bSOL',   decimals: 9 },
+  'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn': { symbol: 'jitoSOL',decimals: 9 },
+  '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R': { symbol: 'RAY',    decimals: 6 },
+  'SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt':  { symbol: 'SRM',    decimals: 6 },
+  'MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey':  { symbol: 'MNDE',   decimals: 9 },
+  'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE':  { symbol: 'ORCA',   decimals: 6 },
+  'AFbX8oGjGpmVFywbVouvhQSRmiW2aR1mohfahi4Y2AdB': { symbol: 'GST',    decimals: 9 },
+  'kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6':  { symbol: 'KIN',    decimals: 5 },
+  'SHDWyBxihqiCj6YekG2GUr7wqKLeLAMK1gHZck9pL6y':  { symbol: 'SHDW',   decimals: 9 },
+  'MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac':  { symbol: 'MNGO',   decimals: 6 },
+  '7i5KKsX2weiTkry7jA4ZwSuXGhs5eJBEjY8vVxR4pfRx': { symbol: 'GMT',    decimals: 9 },
+  'DUSTawucrTsGU8hcqRdHDCbuYhCPADMLM2VcCb8VnFnQ': { symbol: 'DUST',   decimals: 9 },
+  'HxhWkVpk5NS4Ltg5nij2G671CKXFRKPK8vy271Ub4uEK': { symbol: 'HXRO',   decimals: 8 },
+  'A9mUU4qviSctJVPJdBGJnDGHupAECPHJQ4rLrjMGj3C':  { symbol: 'AURY',   decimals: 9 },
+  'TNSRxcUxoT9xBG3de7PiJyTDYu7kskLqcpddxnEJAS6':  { symbol: 'TNSR',   decimals: 9 },
+  'WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk':   { symbol: 'WEN',    decimals: 5 },
+  'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5':  { symbol: 'MEW',    decimals: 5 },
+  '27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4': { symbol: 'JLP',    decimals: 6 },
+  'J3NKxxXZcnNiMjKw9hYb2K4LUxgwB6t1FtPtQVsv3KFr': { symbol: 'SPX',    decimals: 8 },
+  'nosXBVoaCTtYdLvKY6Csb4AC8JCdQKKAaWYtx2ZMoo7':  { symbol: 'NOS',    decimals: 6 },
+  'DriFtupJYLTosbwoN8koMbEYSx54aFAVLddWsbksjwg7':  { symbol: 'DRIFT',  decimals: 6 },
+  'SAMUhmwP4smJGdPjeLnBbHx8Zy5bMZtY5Ajeh3MUFp':   { symbol: 'SAMO',   decimals: 9 },
+  'Gz7VkD4MacbEB6yC5XD3HcumEiYx2EtDYYrfikGsvopG': { symbol: 'CHILLGUY',decimals: 6 },
+  'A8C3xuqscfmyLrte3VwJ7cqiLpR3ULb9T7yt5nNzYHzR': { symbol: 'W',      decimals: 6 },
+  '2wme8EVkw8qsfSk2B3QeX4S64ac6wxHPXb3GrdckEkio': { symbol: 'PRCL',   decimals: 6 },
+  'CKfatsPMUf8SkiURsDXs7eK6GWb4Jsd6UDbs7twMCWxo': { symbol: 'BOME',   decimals: 6 },
+  'ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82':  { symbol: 'BSOL',   decimals: 9 },
+  'FtgGSFADXBtroxq8VCausXRr2of47QBf5AS1NtZCu4GD': { symbol: 'BRZ',    decimals: 4 },
+  'HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4': { symbol: 'MYRO',   decimals: 9 },
+  'jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v':  { symbol: 'jupSOL', decimals: 9 },
+  'LAYER61bGDnMbDyCLMGiDBKN8BKXLS7VjDEyDJEP6MLa': { symbol: 'LAYER',  decimals: 6 },
+  'MEFNBXixkEbait3xn9x0tMkNKVitA7fEgdeFrjVi3o5': { symbol: 'ME',     decimals: 6 },
+  'AZsHEMXd36Bj1EMNXhowJajpUXzrKcK57wW4ZGXVa7yR': { symbol: 'GUAC',   decimals: 5 },
+  'GDfnEsia2WLAW5t8yx2tFEJB4z7XgSFbMHiVHsWeMgyc': { symbol: 'GECKO',  decimals: 6 },
+};
+
 // In-memory metadata cache (survives across requests, cleared on restart)
 const metaCache = new Map<string, TokenMeta>();
 
@@ -34,71 +89,79 @@ async function fetchTokenMetadataBatch(mints: string[], rpcConnection?: Connecti
 
   if (!uncached.length || !env.HELIUS_API_KEY) return results;
 
-  try {
-    await rateLimiter.acquire();
-    const res = await fetch(`https://mainnet.helius-rpc.com/?api-key=${env.HELIUS_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: '1',
-        method: 'getAssetBatch',
-        params: { ids: uncached },
-      }),
-    });
-    const json = await res.json() as any;
-    const assets = json?.result || [];
-    for (const asset of assets) {
-      const id = asset?.id;
-      if (!id) continue;
-      const content = asset?.content;
-      const tokenInfo = asset?.token_info || {};
-      const symbol = content?.metadata?.symbol || tokenInfo?.symbol;
-      const icon = content?.links?.image || content?.files?.[0]?.uri;
-      const decimals = tokenInfo?.decimals ?? 0;
-      const priceUsd = tokenInfo?.price_info?.price_per_token;
-      const meta: TokenMeta = { symbol: symbol || undefined, icon: icon || undefined, decimals, priceUsd };
-      metaCache.set(id, meta);
-      results.set(id, meta);
+  // Chunk into batches of 50 for Helius getAssetBatch
+  const HELIUS_BATCH_SIZE = 50;
+  for (let i = 0; i < uncached.length; i += HELIUS_BATCH_SIZE) {
+    const chunk = uncached.slice(i, i + HELIUS_BATCH_SIZE);
+    try {
+      await rateLimiter.acquire();
+      const res = await fetch(`https://mainnet.helius-rpc.com/?api-key=${env.HELIUS_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: '1',
+          method: 'getAssetBatch',
+          params: { ids: chunk },
+        }),
+      });
+      const json = await res.json() as any;
+      const assets = json?.result || [];
+      for (const asset of assets) {
+        const id = asset?.id;
+        if (!id) continue;
+        const content = asset?.content;
+        const tokenInfo = asset?.token_info || {};
+        const symbol = content?.metadata?.symbol || tokenInfo?.symbol;
+        const icon = content?.links?.image || content?.files?.[0]?.uri;
+        const decimals = tokenInfo?.decimals ?? 0;
+        const priceUsd = tokenInfo?.price_info?.price_per_token;
+        const meta: TokenMeta = { symbol: symbol || undefined, icon: icon || undefined, decimals, priceUsd };
+        metaCache.set(id, meta);
+        results.set(id, meta);
+      }
+    } catch {
+      // Silently fail for this chunk
     }
-  } catch {
-    // Silently fail
   }
 
-  // DexScreener fallback for tokens missing metadata
+  // DexScreener fallback for tokens missing metadata — parallelized with max 3 concurrent
   const needMeta = uncached.filter(m => !results.has(m) || !results.get(m)?.symbol);
   if (needMeta.length > 0) {
     console.log(`[SCANNER] Fetching metadata from DexScreener for ${needMeta.length} tokens`);
-    for (const mint of needMeta) {
-      try {
-        const res = await fetch(`https://api.dexscreener.com/tokens/v1/solana/${mint}`);
-        if (res.ok) {
-          const pairs = await res.json() as any[];
-          if (pairs?.length > 0) {
-            const token = pairs[0].baseToken?.address === mint ? pairs[0].baseToken : pairs[0].quoteToken;
-            if (token?.symbol) {
-              // Fetch decimals from on-chain mint account
-              let decimals = results.get(mint)?.decimals ?? 0;
-              if (decimals === 0 && rpcConnection) {
-                try {
-                  const mintInfo = await import('@solana/spl-token').then(m => m.getMint(rpcConnection, new PublicKey(mint)));
-                  decimals = mintInfo.decimals;
-                } catch {}
+    const DEX_CONCURRENCY = 3;
+    for (let i = 0; i < needMeta.length; i += DEX_CONCURRENCY) {
+      const batch = needMeta.slice(i, i + DEX_CONCURRENCY);
+      await Promise.allSettled(batch.map(async (mint) => {
+        try {
+          const res = await fetch(`https://api.dexscreener.com/tokens/v1/solana/${mint}`);
+          if (res.ok) {
+            const pairs = await res.json() as any[];
+            if (pairs?.length > 0) {
+              const token = pairs[0].baseToken?.address === mint ? pairs[0].baseToken : pairs[0].quoteToken;
+              if (token?.symbol) {
+                let decimals = results.get(mint)?.decimals ?? 0;
+                if (decimals === 0 && rpcConnection) {
+                  try {
+                    const mintInfo = await import('@solana/spl-token').then(m => m.getMint(rpcConnection, new PublicKey(mint)));
+                    decimals = mintInfo.decimals;
+                  } catch {}
+                }
+                const meta: TokenMeta = {
+                  symbol: token.symbol,
+                  icon: pairs[0].info?.imageUrl || undefined,
+                  decimals,
+                  priceUsd: parseFloat(pairs[0].priceUsd) || undefined,
+                };
+                metaCache.set(mint, meta);
+                results.set(mint, meta);
               }
-              const meta: TokenMeta = {
-                symbol: token.symbol,
-                icon: pairs[0].info?.imageUrl || undefined,
-                decimals,
-                priceUsd: parseFloat(pairs[0].priceUsd) || undefined,
-              };
-              metaCache.set(mint, meta);
-              results.set(mint, meta);
             }
           }
-        }
-      } catch {}
-      // Small delay to avoid DexScreener rate limits
-      await new Promise(r => setTimeout(r, 200));
+        } catch {}
+      }));
+      // Small delay between batches to avoid DexScreener rate limits
+      if (i + DEX_CONCURRENCY < needMeta.length) await new Promise(r => setTimeout(r, 200));
     }
   }
 
@@ -240,9 +303,35 @@ export async function lookupWalletApprovals(walletAddress: string) {
     }
   }
 
-  // Step 2: Batch-fetch metadata for ALL unique mints in ONE call
+  // Step 2: Batch-fetch metadata — large wallet mode if > threshold
   const allMints = [...new Set([...rawApprovals.map(a => a.mint), ...rawBalances.map(b => b.mint)])];
-  const metaMap = await fetchTokenMetadataBatch(allMints, connection);
+  const isLargeWallet = allMints.length > LARGE_WALLET_THRESHOLD;
+  let hiddenVerifiedCount = 0;
+  let mintsToFetch: string[];
+  const verifiedMetaMap = new Map<string, TokenMeta>();
+
+  if (isLargeWallet) {
+    console.log(`[SCANNER] Large wallet mode: ${allMints.length} unique mints (threshold: ${LARGE_WALLET_THRESHOLD})`);
+    const verifiedMints: string[] = [];
+    const unknownMints: string[] = [];
+    for (const mint of allMints) {
+      if (VERIFIED_TOKEN_META[mint]) {
+        verifiedMints.push(mint);
+        verifiedMetaMap.set(mint, VERIFIED_TOKEN_META[mint]);
+      } else {
+        unknownMints.push(mint);
+      }
+    }
+    hiddenVerifiedCount = verifiedMints.length;
+    mintsToFetch = unknownMints;
+    console.log(`[SCANNER] Large wallet: ${verifiedMints.length} verified (skipped), ${unknownMints.length} unknown (fetching)`);
+  } else {
+    mintsToFetch = allMints;
+  }
+
+  const fetchedMetaMap = await fetchTokenMetadataBatch(mintsToFetch, connection);
+  // Merge verified + fetched
+  const metaMap = new Map<string, TokenMeta>([...verifiedMetaMap, ...fetchedMetaMap]);
 
   // Step 3: Build results with metadata
   const approvals = rawApprovals.map(a => {
@@ -293,12 +382,8 @@ export async function lookupWalletApprovals(walletAddress: string) {
 
   // Known token names that scammers impersonate
   const IMPERSONATED_NAMES = new Set(['SOL', 'ETH', 'BTC', 'USDC', 'USDT', 'BONK', 'JUP', 'WIF', 'PYTH', 'JTO', 'RNDR', 'HNT']);
-  // Real mint addresses for common tokens
-  const REAL_MINTS = new Set([
-    'So11111111111111111111111111111111111111112',  // wSOL
-    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
-    'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
-  ]);
+  // Real mint addresses for common tokens (used for impersonation detection AND large wallet mode)
+  const REAL_MINTS = new Set(Object.keys(VERIFIED_TOKEN_META));
 
   const solEntry = {
     mint: 'native' as const,
@@ -312,7 +397,9 @@ export async function lookupWalletApprovals(walletAddress: string) {
     flags: [] as string[],
   };
 
-  const balances = [solEntry, ...rawBalances.map(b => {
+  // In large wallet mode, exclude verified token balances (they're hidden)
+  const balanceInputs = isLargeWallet ? rawBalances.filter(b => !VERIFIED_TOKEN_META[b.mint]) : rawBalances;
+  const balances = [solEntry, ...balanceInputs.map(b => {
     const meta = metaMap.get(b.mint) || { decimals: 0 };
     const rawBal = BigInt(b.balance);
     const decimals = meta.decimals || 0;
@@ -364,7 +451,13 @@ export async function lookupWalletApprovals(walletAddress: string) {
     ? scoreWallet(approvals.map(a => ({ level: a.riskLevel, score: a.riskScore, flags: a.riskFlags }))).score
     : 0;
 
-  return { approvals, balances, walletScore };
+  const result: any = { approvals, balances, walletScore };
+  if (isLargeWallet) {
+    result.truncated = true;
+    result.totalTokens = allMints.length;
+    result.hiddenVerified = hiddenVerifiedCount;
+  }
+  return result;
 }
 
 export async function scanWalletApprovals(walletAddress: string) {
