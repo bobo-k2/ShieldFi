@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { readFileSync } from 'fs';
 
 const DASHBOARD_PATH = '/home/bobo_kovacevic/.openclaw/workspace/zagreb-apartments/index.html';
-const ACCESS_KEY = 'BobosApartments2026!';
+const ACCESS_KEY = 'BobosApartments2026';
 
 export async function privateRoutes(app: FastifyInstance) {
   // Robots.txt with /d/ disallowed
