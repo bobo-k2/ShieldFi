@@ -255,6 +255,87 @@ async function scanTokenProgram(
   return approvals;
 }
 
+// Fetch token accounts with timeout, returns null on timeout/failure
+async function fetchTokenAccountsWithTimeout(
+  connection: Connection,
+  owner: PublicKey,
+  programId: PublicKey,
+  timeoutMs: number = 15000,
+): Promise<any | null> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const result = await connection.getTokenAccountsByOwner(owner, { programId });
+    clearTimeout(timer);
+    return result;
+  } catch (e: any) {
+    const msg = (e?.message || '').toLowerCase();
+    if (msg.includes('abort') || msg.includes('timeout')) {
+      console.log(`[SCANNER] Token account fetch timed out after ${timeoutMs}ms`);
+      return null;
+    }
+    throw e;
+  }
+}
+
+// Use Helius DAS getTokenAccounts for large wallets (supports pagination)
+async function fetchTokenAccountsViaDAS(
+  walletAddress: string,
+): Promise<{ mint: string; balance: string; delegate?: string; delegatedAmount?: string }[]> {
+  if (!env.HELIUS_API_KEY) return [];
+
+  const results: { mint: string; balance: string; delegate?: string; delegatedAmount?: string }[] = [];
+  let page = 1;
+  const PAGE_LIMIT = 100;
+  const MAX_PAGES = 10; // Safety cap: 1000 tokens max
+
+  while (page <= MAX_PAGES) {
+    try {
+      await rateLimiter.acquire();
+      const res = await fetch(`https://mainnet.helius-rpc.com/?api-key=${env.HELIUS_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: '1',
+          method: 'getTokenAccounts',
+          params: {
+            owner: walletAddress,
+            page,
+            limit: PAGE_LIMIT,
+            options: { showZeroBalance: false },
+          },
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      const json = await res.json() as any;
+      const accounts = json?.result?.token_accounts || [];
+      if (accounts.length === 0) break;
+
+      for (const acct of accounts) {
+        const entry: any = {
+          mint: acct.mint,
+          balance: acct.amount?.toString() || '0',
+        };
+        if (acct.delegate) {
+          entry.delegate = acct.delegate;
+          entry.delegatedAmount = acct.delegated_amount?.toString() || '0';
+        }
+        results.push(entry);
+      }
+
+      if (accounts.length < PAGE_LIMIT) break;
+      page++;
+    } catch (e: any) {
+      console.log(`[SCANNER] DAS getTokenAccounts page ${page} failed:`, e?.message?.substring(0, 80));
+      break; // Return what we have so far
+    }
+  }
+
+  console.log(`[SCANNER] DAS fetched ${results.length} token accounts across ${page} pages`);
+  return results;
+}
+
 // Public lookup — no DB, returns raw results
 export async function lookupWalletApprovals(walletAddress: string) {
   let connection: Connection;
@@ -271,26 +352,63 @@ export async function lookupWalletApprovals(walletAddress: string) {
   // Step 1: Collect all token accounts (one RPC call per program)
   const rawApprovals: { mint: string; spender: string; delegatedAmount: string; balance: string; isUnlimited: boolean }[] = [];
   const rawBalances: { mint: string; balance: string }[] = [];
+  let usedDASFallback = false;
 
   for (const programId of [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID]) {
     let tokenAccounts;
     try {
-      tokenAccounts = await connection.getTokenAccountsByOwner(owner, { programId });
+      tokenAccounts = await fetchTokenAccountsWithTimeout(connection, owner, programId, 15000);
+      if (!tokenAccounts) throw new Error('Timed out');
     } catch (e: any) {
       console.log('[SCANNER] Primary RPC failed, trying alternate:', e?.message?.substring(0, 80));
       try {
         const alt = getFallbackConnection();
-        tokenAccounts = await alt.getTokenAccountsByOwner(owner, { programId });
-        connection = alt; // use fallback for subsequent calls too
+        tokenAccounts = await fetchTokenAccountsWithTimeout(alt, owner, programId, 20000);
+        if (tokenAccounts) connection = alt; // use fallback for subsequent calls too
       } catch (e2: any) {
-        const msg = (e2?.message || '').toLowerCase();
-        if (msg.includes('exceeded') || msg.includes('too large') || msg.includes('limit')) {
-          console.log('[SCANNER] Wallet too large for RPC, returning partial results');
-          continue; // skip this program, return what we have
+        // Fall through to DAS fallback
+      }
+
+      // If both RPC methods failed, try Helius DAS API (paginated, handles large wallets)
+      if (!tokenAccounts && programId === TOKEN_PROGRAM_ID) {
+        console.log('[SCANNER] RPC methods failed, trying Helius DAS pagination fallback');
+        const dasAccounts = await fetchTokenAccountsViaDAS(walletAddress);
+        if (dasAccounts.length > 0) {
+          usedDASFallback = true;
+          for (const acct of dasAccounts) {
+            if (BigInt(acct.balance) > 0n) {
+              rawBalances.push({ mint: acct.mint, balance: acct.balance });
+            }
+            if (acct.delegate && acct.delegatedAmount) {
+              rawApprovals.push({
+                mint: acct.mint,
+                spender: acct.delegate,
+                delegatedAmount: acct.delegatedAmount,
+                balance: acct.balance,
+                isUnlimited: BigInt(acct.delegatedAmount) >= BigInt('18446744073709551615'),
+              });
+            }
+          }
+          continue; // DAS returns all programs, skip TOKEN_2022 iteration
         }
-        throw e2;
+
+        const msg = (e?.message || '').toLowerCase();
+        if (msg.includes('exceeded') || msg.includes('too large') || msg.includes('limit') || msg.includes('timed out')) {
+          console.log('[SCANNER] Wallet too large for RPC, returning partial results');
+          continue;
+        }
+        throw e;
+      }
+
+      if (!tokenAccounts) {
+        console.log('[SCANNER] Could not fetch token accounts for program, skipping');
+        continue;
       }
     }
+
+    // Skip if DAS fallback was used (it covers both programs)
+    if (usedDASFallback) continue;
+
     for (const { account } of tokenAccounts.value) {
       const data = AccountLayout.decode(account.data);
       const mint = new PublicKey(data.mint).toBase58();
@@ -465,6 +583,9 @@ export async function lookupWalletApprovals(walletAddress: string) {
     result.truncated = true;
     result.totalTokens = allMints.length;
     result.hiddenVerified = hiddenVerifiedCount;
+  }
+  if (usedDASFallback) {
+    result.partial = true;
   }
   return result;
 }

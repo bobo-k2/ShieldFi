@@ -23,7 +23,15 @@ export async function approvalPublicRoutes(app: FastifyInstance) {
       }
 
       const results = await lookupWalletApprovals(address);
-      const response = { address, approvals: results.approvals, balances: results.balances, walletScore: results.walletScore };
+      const response: any = { address, approvals: results.approvals, balances: results.balances, walletScore: results.walletScore };
+      if (results.truncated) {
+        response.truncated = results.truncated;
+        response.totalTokens = results.totalTokens;
+        response.hiddenVerified = results.hiddenVerified;
+      }
+      if (results.partial) {
+        response.partial = true;
+      }
       scanCache.set(address, response);
       return response;
     } catch (err: any) {
