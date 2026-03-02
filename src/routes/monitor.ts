@@ -165,7 +165,8 @@ async function getBotUsername(): Promise<string> {
   if (cachedBotUsername) return cachedBotUsername;
   try {
     const { env } = await import('../env.js');
-    const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getMe`);
+    const token = env.TELEGRAM_PUBLIC_BOT_TOKEN || env.TELEGRAM_BOT_TOKEN;
+    const res = await fetch(`https://api.telegram.org/bot${token}/getMe`);
     const data = await res.json() as any;
     cachedBotUsername = data?.result?.username || 'ShieldFiBot';
   } catch {
