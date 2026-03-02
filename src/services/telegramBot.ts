@@ -1,6 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { PublicKey } from '@solana/web3.js';
 import { APP } from '../config';
+import { prisma } from '../db.js';
 const APP_NAME = APP.name;
 
 let bot: TelegramBot | null = null;
@@ -47,9 +48,48 @@ function startPublicBot(baseUrl: string) {
   bot = new TelegramBot(token, { polling: true });
   console.log(`[TG-Bot] ${APP_NAME} public bot started`);
 
-  // /start
-  bot.onText(/\/start/, (msg) => {
+  // /start (with optional deep link parameter for Telegram linking)
+  bot.onText(/\/start\s*(.*)/, async (msg, match) => {
     const chatId = msg.chat.id;
+    const param = match?.[1]?.trim();
+
+    // Handle deep link for wallet monitoring
+    if (param && param.startsWith('LINK_')) {
+      try {
+        const wallet = await prisma.monitoredWallet.findFirst({
+          where: { linkCode: param, isActive: true },
+        });
+
+        if (wallet) {
+          await prisma.monitoredWallet.update({
+            where: { id: wallet.id },
+            data: { telegramChatId: String(chatId), linkCode: null },
+          });
+          bot!.sendMessage(chatId,
+            `✅ <b>Telegram linked!</b>\n\n` +
+            `Wallet: <code>${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}</code>\n\n` +
+            `You'll now receive real-time alerts here when we detect:\n` +
+            `• Suspicious incoming tokens\n` +
+            `• Risky token approvals\n` +
+            `• Unusual transaction activity\n\n` +
+            `🔗 <a href="https://shieldfi.app/dashboard.html?address=${wallet.address}">View dashboard</a>`,
+            { parse_mode: 'HTML', disable_web_page_preview: true }
+          );
+          return;
+        } else {
+          bot!.sendMessage(chatId,
+            `❌ Link code expired or invalid. Please try "Connect Telegram" again from the dashboard.`,
+          );
+          return;
+        }
+      } catch (err: any) {
+        console.error('[TG-Bot] Link error:', err.message);
+        bot!.sendMessage(chatId, `❌ Something went wrong linking your wallet. Please try again.`);
+        return;
+      }
+    }
+
+    // Default welcome
     bot!.sendMessage(chatId, 
       `🛡️ <b>Welcome to ${APP_NAME}!</b>\n\n` +
       `I'm your Solana wallet security guardian.\n\n` +
