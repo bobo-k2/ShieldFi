@@ -137,7 +137,10 @@
       <input type="text" id="heroAddr" placeholder="Paste any Solana wallet address…" autocomplete="off">
       <button class="btn btn-sm" onclick="goScan()">Scan →</button>
     </div>
-    <p class="secondary-cta">or <a href="/dashboard.html">Connect Phantom Wallet</a></p>
+    <div style="margin-top:.75rem;display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap">
+      <p class="secondary-cta" style="margin:0">or <a href="/dashboard.html">Connect Phantom Wallet</a></p>
+      <button class="btn btn-sm btn-ghost" onclick="demoScan()" style="border-color:rgba(0,212,170,.35);color:#00d4aa;font-size:.8rem;padding:6px 16px">▶ Try Demo Scan</button>
+    </div>
     <p id="scanCounter" style="margin-top:1.25rem;font-size:1.05rem;color:#00d4aa;font-weight:600;opacity:0;transition:opacity .5s"></p>
   </div>
 </section>
@@ -208,6 +211,13 @@ fetch('/api/events',{method:'POST',headers:{'Content-Type':'application/json'},b
 </footer>
 
 <script>
+function demoScan(){
+  const addr='CtGXh8D9MyXaPcEutWdMRe3QfZ1mteh7wvCBfTG9wYym';
+  const inp=document.getElementById('heroAddr');
+  inp.value=addr;
+  inp.focus();
+  window.location.href='/wallet/'+addr;
+}
 function goScan(from){
   const id = from==='bottom' ? 'bottomAddr' : 'heroAddr';
   const addr = document.getElementById(id).value.trim();
