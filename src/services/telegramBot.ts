@@ -1,6 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { PublicKey } from '@solana/web3.js';
-import { APP } from '../config';
+import { APP } from '../config.js';
 import { prisma } from '../db.js';
 const APP_NAME = APP.name;
 
