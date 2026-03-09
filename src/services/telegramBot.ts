@@ -33,6 +33,42 @@ function classEmoji(cls: string): string {
   return map[cls?.toLowerCase()] || '❓';
 }
 
+// Monitor limits per subscription tier
+const MONITOR_LIMITS: Record<string, number> = {
+  free: 1,
+  guardian: 5,
+  sentinel: 20,
+};
+
+async function getMonitorLimit(chatId: string): Promise<{ tier: string; limit: number; used: number }> {
+  // Find all wallets linked to this chatId
+  const linkedWallets = await prisma.monitoredWallet.findMany({
+    where: { telegramChatId: chatId, isActive: true },
+    select: { address: true },
+  });
+
+  // Check if any linked wallet has a paid subscription
+  let tier = 'free';
+  if (linkedWallets.length > 0) {
+    const addresses = linkedWallets.map(w => w.address);
+    const sub = await prisma.subscription.findFirst({
+      where: {
+        walletAddress: { in: addresses },
+        status: 'active',
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { plan: 'desc' }, // sentinel > guardian alphabetically
+    });
+    if (sub) tier = sub.plan;
+  }
+
+  return {
+    tier,
+    limit: MONITOR_LIMITS[tier] || MONITOR_LIMITS.free,
+    used: linkedWallets.length,
+  };
+}
+
 export function startTelegramBot() {
   const baseUrl = `http://127.0.0.1:${process.env.PORT || 3001}`;
   startPublicBot(baseUrl);
@@ -53,6 +89,25 @@ function startPublicBot(baseUrl: string) {
     const chatId = msg.chat.id;
     const param = match?.[1]?.trim();
 
+    // Track subscriber
+    try {
+      await prisma.telegramSubscriber.upsert({
+        where: { chatId: String(chatId) },
+        update: {
+          lastSeenAt: new Date(),
+          username: msg.from?.username || undefined,
+          firstName: msg.from?.first_name || undefined,
+        },
+        create: {
+          chatId: String(chatId),
+          username: msg.from?.username || null,
+          firstName: msg.from?.first_name || null,
+        },
+      });
+    } catch (e: any) {
+      console.error('[TG-Bot] Failed to track subscriber:', e.message);
+    }
+
     // Handle deep link for wallet monitoring
     if (param && param.startsWith('LINK_')) {
       try {
@@ -61,6 +116,21 @@ function startPublicBot(baseUrl: string) {
         });
 
         if (wallet) {
+          // Check monitor limit before linking
+          const { tier, limit, used } = await getMonitorLimit(String(chatId));
+          if (used >= limit) {
+            bot!.sendMessage(chatId,
+              `⚠️ <b>Monitor limit reached</b>\n\n` +
+              `Your <b>${tier}</b> plan allows <b>${limit}</b> monitored wallet${limit === 1 ? '' : 's'}.\n` +
+              `You currently have ${used} active.\n\n` +
+              (tier === 'free'
+                ? `Upgrade to Guardian ($7/mo) for up to 5 wallets, or Sentinel ($19/mo) for 20.\n\n🔗 <a href="https://shieldfi.app">Upgrade at shieldfi.app</a>`
+                : `Remove an existing monitor first, or upgrade your plan.\n\n🔗 <a href="https://shieldfi.app">Manage at shieldfi.app</a>`),
+              { parse_mode: 'HTML', disable_web_page_preview: true }
+            );
+            return;
+          }
+
           await prisma.monitoredWallet.update({
             where: { id: wallet.id },
             data: { telegramChatId: String(chatId), linkCode: null },

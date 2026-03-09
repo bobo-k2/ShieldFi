@@ -50,15 +50,16 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const twentyFourHoursAgo = new Date(now - 86_400_000);
 
     const scanTypes = { type: { in: ['scan', 'lookup'] } };
-    const [totalScans, totalWallets, scanLast24h, activeSubscriptions, monitoredWallets] = await Promise.all([
+    const [totalScans, totalWallets, scanLast24h, activeSubscriptions, monitoredWallets, telegramSubscribers] = await Promise.all([
       prisma.event.count({ where: scanTypes }),
       prisma.event.groupBy({ by: ['address'], where: { ...scanTypes, address: { not: null } } }).then(r => r.length),
       prisma.event.count({ where: { ...scanTypes, createdAt: { gte: twentyFourHoursAgo } } }),
       prisma.subscription.count({ where: { status: 'active' } }),
-      prisma.monitoredWallet.count(),
+      prisma.monitoredWallet.count({ where: { isActive: true } }),
+      prisma.telegramSubscriber.count(),
     ]);
 
-    const data = { totalScans, totalWallets, scanLast24h, activeSubscriptions, monitoredWallets };
+    const data = { totalScans, totalWallets, scanLast24h, activeSubscriptions, monitoredWallets, telegramSubscribers };
     statsCache = { data, ts: now };
     return data;
   });

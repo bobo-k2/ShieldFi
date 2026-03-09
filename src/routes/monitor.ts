@@ -3,6 +3,13 @@ import { prisma } from '../db.js';
 
 const MAX_MONITORS_PER_IP = 5;
 
+// Tier-based limits (enforced per Telegram chatId)
+const TIER_LIMITS: Record<string, number> = {
+  free: 1,
+  guardian: 5,
+  sentinel: 20,
+};
+
 function getClientIp(request: any): string {
   return request.headers['x-forwarded-for']?.split(',')[0]?.trim()
     || request.headers['x-real-ip']

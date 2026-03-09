@@ -134,6 +134,17 @@ model Event {
   @@map("events")
 }
 
+model TelegramSubscriber {
+  id        String   @id @default(cuid())
+  chatId    String   @unique
+  username  String?
+  firstName String?
+  startedAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  @@map("telegram_subscribers")
+}
+
 model Subscription {
   id            String   @id @default(cuid())
   walletAddress String   @unique
