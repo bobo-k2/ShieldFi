@@ -246,7 +246,7 @@ echo "$r" | python3 -c "import sys,json;json.load(sys.stdin)" 2>/dev/null && pas
 
 # Check expiry field returned
 r=$(curl -s "$BASE/api/monitor/$BOT/status")
-expires=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);print('yes' if d.get('expiresAt') else 'no')" 2>/dev/null)
+expires=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);print('yes' if 'expiresAt' in d else 'no')" 2>/dev/null)
 [ "$expires" = "yes" ] && pass "Monitor expiry field present" || warn "Monitor expiry not in status response"
 
 # Renew monitoring

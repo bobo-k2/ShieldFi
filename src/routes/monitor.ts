@@ -111,7 +111,34 @@ export async function monitorRoutes(app: FastifyInstance) {
       lastCheckedAt: wallet?.lastCheckedAt ?? null,
       telegramLinked: !!wallet?.telegramChatId,
       linkCode: wallet?.linkCode ?? null,
+      expiresAt: wallet?.expiresAt ?? null,
     };
+  });
+
+  // Renew monitoring for a wallet (extend expiry)
+  app.post<{ Body: { address: string } }>('/api/monitor/renew', async (request, reply) => {
+    try {
+      const { address } = request.body || {};
+      if (!address || typeof address !== 'string' || address.length < 32) {
+        return reply.status(400).send({ error: 'Valid Solana address required' });
+      }
+
+      const wallet = await prisma.monitoredWallet.findUnique({ where: { address } });
+      if (!wallet) {
+        return reply.status(404).send({ error: 'Wallet not monitored' });
+      }
+
+      // Renew: reactivate + clear expiry
+      await prisma.monitoredWallet.update({
+        where: { id: wallet.id },
+        data: { isActive: true, expiresAt: null },
+      });
+
+      return { success: true, address };
+    } catch (e: any) {
+      app.log.error(e);
+      return reply.status(500).send({ error: 'Failed to renew: ' + e.message });
+    }
   });
 
   // Generate a Telegram link code for a monitored wallet
