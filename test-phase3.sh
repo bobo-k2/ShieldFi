@@ -344,6 +344,73 @@ bonk_level=$(curl -s "$BASE/api/risk/token/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB
 
 echo ""
 
+# ---- SECTION: Stats Endpoint (Subscriptions & Telegram) ----
+echo "--- Stats: Subscriptions & Telegram Metrics ---"
+
+r=$(curl -s "$BASE/api/stats")
+
+# activeSubscriptions field exists
+echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);assert 'activeSubscriptions' in d" 2>/dev/null \
+  && pass "Stats: activeSubscriptions field present" || fail "Stats: activeSubscriptions field missing"
+
+# monitoredWallets field exists and is a number
+mw=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);v=d['monitoredWallets'];assert isinstance(v,int);print(v)" 2>/dev/null)
+[ $? -eq 0 ] && pass "Stats: monitoredWallets is integer ($mw)" || fail "Stats: monitoredWallets missing or not integer"
+
+# telegramSubscribers field exists and is a number
+ts=$(echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);v=d['telegramSubscribers'];assert isinstance(v,int);print(v)" 2>/dev/null)
+[ $? -eq 0 ] && pass "Stats: telegramSubscribers is integer ($ts)" || fail "Stats: telegramSubscribers missing or not integer"
+
+# Original fields still present
+for field in totalScans totalWallets scanLast24h; do
+  echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);assert '$field' in d" 2>/dev/null \
+    && pass "Stats: $field still present" || fail "Stats: $field missing"
+done
+
+echo ""
+
+# ---- SECTION: Monitor Tier Limits ----
+echo "--- Monitor: Tier-Based Limits ---"
+
+# Add a test wallet to monitoring
+TEST_ADDR="11111111111111111111111111111111"
+r=$(curl -s -X POST "$BASE/api/monitor/add" -H "Content-Type: application/json" -d "{\"address\":\"$TEST_ADDR\"}")
+echo "$r" | grep -q "success\|already" && pass "Monitor: can add test wallet" || fail "Monitor: failed to add test wallet"
+
+# Adding a second distinct test wallet should also work (IP limit is 5)
+TEST_ADDR2="22222222222222222222222222222222"
+r=$(curl -s -X POST "$BASE/api/monitor/add" -H "Content-Type: application/json" -d "{\"address\":\"$TEST_ADDR2\"}")
+echo "$r" | grep -q "success\|already" && pass "Monitor: can add second test wallet" || fail "Monitor: failed to add second wallet"
+
+# Verify monitor list works
+r=$(curl -s "$BASE/api/monitor")
+echo "$r" | python3 -c "import sys,json;d=json.load(sys.stdin);assert 'wallets' in d;assert 'limit' in d" 2>/dev/null \
+  && pass "Monitor: list returns wallets and limit" || fail "Monitor: list endpoint broken"
+
+# Clean up test wallets
+curl -s -X DELETE "$BASE/api/monitor/$TEST_ADDR" > /dev/null 2>&1
+curl -s -X DELETE "$BASE/api/monitor/$TEST_ADDR2" > /dev/null 2>&1
+pass "Monitor: cleanup test wallets"
+
+echo ""
+
+# ---- SECTION: Telegram Subscriber Tracking ----
+echo "--- Telegram: Subscriber Schema ---"
+
+# Verify telegram_subscribers table exists
+ts_exists=$(sqlite3 prisma/dev.db "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='telegram_subscribers';" 2>/dev/null)
+[ "$ts_exists" = "1" ] && pass "DB: telegram_subscribers table exists" || fail "DB: telegram_subscribers table missing"
+
+# Verify schema has expected columns
+cols=$(sqlite3 prisma/dev.db "PRAGMA table_info(telegram_subscribers);" 2>/dev/null | grep -c "chatId\|username\|firstName\|startedAt\|lastSeenAt")
+[ "$cols" -ge 4 ] && pass "DB: telegram_subscribers has expected columns ($cols)" || fail "DB: telegram_subscribers schema incomplete ($cols columns)"
+
+# Verify subscriptions table exists with plan field
+sub_plan=$(sqlite3 prisma/dev.db "PRAGMA table_info(subscriptions);" 2>/dev/null | grep -c "plan\|status\|walletAddress")
+[ "$sub_plan" -ge 3 ] && pass "DB: subscriptions has plan/status/walletAddress" || fail "DB: subscriptions schema incomplete"
+
+echo ""
+
 # ---- SUMMARY ----
 echo "========================================="
 echo "RESULTS: ✅ $PASS passed | ❌ $FAIL failed | ⚠️  $WARN warnings"
