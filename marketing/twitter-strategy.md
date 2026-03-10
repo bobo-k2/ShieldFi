@@ -1,101 +1,71 @@
-# ShieldFi Twitter Marketing Strategy
+# ShieldFi Twitter Strategy
 
-## Account: @ShieldFiApp
-## Started: 2026-03-01
+## Voice & Tone
+- **Helpful, curious, educational** — not fear-based
+- We're the friendly security nerd who shows you what's in your wallet
+- Positive framing: "here's how to stay safe" NOT "you're in danger"
+- Build trust by providing value first, always
+- Never beg for follows or retweets
 
-## API Limitations
-- Free tier: can only reply to tweets where we've been mentioned
-- Can: tweet, thread, like, follow, search, quote tweet
-- Cannot: reply to arbitrary tweets (403 forbidden)
+## Frequency
+- **1 post per day** (quality over quantity)
+- Engage in replies naturally when relevant
+- Don't spam, don't be aggressive
 
-## Strategy
-1. **Original content** — educational threads about Solana security (2-3/day)
-2. **Follow relevant accounts** — Solana ecosystem, security, DeFi, builders
-3. **Like** tweets about wallet security, scam warnings, token analysis
-4. **Quote tweet** interesting security discussions (adds our voice + visibility)
-5. **Engage mentions** — reply to anyone who mentions us or asks about wallet security
+## Content Pillars (rotate through these)
 
-## Content Pillars
-- 🛡️ Security tips (red flags, how to check tokens)
-- 📊 Token analysis examples (real-world suspicious tokens)
-- 🚨 Scam alerts (trending scams in the ecosystem)
-- 💡 Educational (how rug pulls work, authority checks explained)
-- 🔧 Product updates (new features, improvements)
+### 1. Educational (2x/week)
+Show people something they didn't know about Solana wallets.
+- "Did you know your Solana wallet can hold tokens you never bought? Here's how to see what's really in there →"
+- "Thread: How token approvals work on Solana and why they matter 🧵"
+- "3 things to check before connecting your wallet to a new dApp"
 
-## Accounts Followed (2026-03-01)
-- @phantom, @SolanaFndn, @solanamobile, @JupiterExchange, @solana
-- @SolanaFloor, @superteamdao, @blowfishxyz, @MagicEden, @tensor_hq
-- @DriftProtocol, @step_finance, @SolanaStatus, @SuperteamEarn
-- @youngzkhengz, @BillyCarvelli, @scarlex0, @PumpGuard_1, @ekinoks_26
+### 2. Community Engagement (2x/week)
+Interactive, fun, builds relationship.
+- "Drop your SOL wallet below — we'll give you a free security checkup 👇"
+- "What's the weirdest token you've found in your wallet? 👀"
+- Twitter polls: "Do you regularly check what tokens are in your wallet?"
+- Respond to everyone who drops a wallet — actually scan it, share highlights
 
-## Tweets Posted (2026-03-01)
-- Thread: 5 red flags before aping (2028167504149795216)
-- Standalone: Random token warning (2028167588694381054)
+### 3. Insight / Data (1-2x/week)
+Share interesting findings without FUD.
+- "We scanned 100 Solana wallets this week. 73% had at least one unknown airdrop. Most are harmless, but here's how to tell the difference →"
+- "Interesting pattern: wallets that use Jupiter tend to have cleaner token lists. Here's why..."
+- Weekly stats: "This week at ShieldFi: X wallets scanned, Y tokens classified"
 
-## Activity Log (2026-03-01 20:00 UTC — Round 3)
-- **Search**: Found tweets (simplified query worked, detailed query 401 — free tier limits)
-- **Likes**: 0 — like endpoint needs elevated access with search results lacking author data
-- **Follows**: 0 — same issue, no author_id in basic search
-- **Original tweet**: BLOCKED (403) — free tier tweet creation failing again
-- **Mentions**: 3 found, replied to all 3
-  - 2027547703924953498 — spam bot (shadow alert scam), replied ⚠️
-  - 2027529127436390606 — spam bot (closed alert scam), replied ⚠️
-  - 2027374726729937200 — REAL user sharing ShieldFi scan! Replied with thanks ✅
-- **Quote tweet**: skipped (no tweet posting available)
-- **Issues**: Tweet creation returning 403. May need to regenerate API keys or check app permissions in developer portal. Search with tweet.fields also 401 on free tier.
-- **TODO**: Bobo should check X Developer Portal — app may need "Read and Write" permissions re-enabled or keys regenerated.
+### 4. Product Updates (1x/week max)
+- New features, improvements
+- Keep it short, show don't tell
+- Always tie back to user benefit
 
-## Activity Log (2026-03-02 09:00 UTC — Round 1)
-- **Search**: 10 results for "Solana scam OR rug pull OR wallet security" — mostly scam recovery spam bots
-- **Likes**: 2 — tweets 2028390538643402842 (BSC scam discussion), 2028392680518983980 (fund recovery reply)
-- **Follows**: 2 — accounts 1743005432564555776, 445368962
-- **Reply to mention**: Replied to 2028222906358956271 ("nice product follow back") → reply 2028395033745920366
-- **Original tweet**: Posted security tip about mint/freeze/LP checks → 2028395068143354142
-- **Quote tweet**: BLOCKED (403) — free tier can't quote tweets we're not mentioned in
-- **Note**: Tweet creation works but breaks with escaped newlines (`\\n`). Use plain text or actual newlines only.
+## What We DON'T Do
+- ❌ Fear-mongering ("YOUR WALLET IS AT RISK!!!")
+- ❌ Fake urgency ("SCAN NOW BEFORE IT'S TOO LATE")
+- ❌ Spam hashtags (max 2, and only when natural)
+- ❌ Multiple posts per day
+- ❌ Cold DMs to random people
+- ❌ Bashing competitors
+- ❌ Posting without value
+- ❌ **ShieldFi link in every tweet** — most tweets should NOT have a link. Let the profile do the work.
+- ❌ **Logo/branding in every post** — tweet like a human builder, not a corporate bot
+- ❌ Hashtag stuffing at the end of tweets — if you need hashtags, weave them naturally or skip them entirely
+- ❌ Sounding like a brand account — we're a builder sharing what we're working on
 
-## Activity Log (2026-03-02 20:00 UTC — Round 2)
-- **Search**: 10 results, mostly noise (K-pop RTs, stock market), a few security-adjacent
-- **Likes**: 3 — tweets 2028560914983927962 (Sinbad security update), 2028560902979514432 (token utility/staking security), 2028560735064752198 (rug pull discussion)
-- **Follows**: 2 — accounts 1633955310095458305 (Sinbad Network), 3351794091
-- **Mentions**: 2 new, replied to both:
-  - 2028535470762631356 — "Hey" → replied with intro + scan link
-  - 2028396118535508140 — follow request → confirmed follow + offered help
-- **Original tweet**: Scam warning about mint authority + unlocked LP → 2028561185004552287
-- **Quote tweet**: BLOCKED (403) — free tier can't quote tweets we're not mentioned in
-- **Note**: Free tier quote tweet limitation confirmed — can only QT tweets mentioning us
+## Hashtags (subtle, max 2 per tweet)
+- #Solana #Web3 (primary)
+- #DeFi #WalletSecurity (secondary, only when relevant)
+- Never hashtag-stuff
 
-## Activity Log (2026-03-03 09:00 UTC — Round 1)
-- **Search**: 10 results for "Solana scam OR rug pull OR wallet hack OR wallet drained" — mix of crypto and noise
-- **Likes**: 4 — tweets 2028757156221075655 (Ledger Solana drain scam warning), 2028756557761220628 (rug pull types explainer), 2028756555630596565 (rug pull terminology), 2028756270648361086 (rug pull victim)
-- **Follows**: 3 — accounts 1720665183188922368 (Ledger security helper), 2000237316242300928 (rug pull educator), 1783131159293038592 (crypto user)
-- **Mentions**: 4 found, all previously replied to (no new ones)
-- **Original tweet**: Educational — how rug pulls work on Solana + what to check → 2028757496735637616
-- **Quote tweet**: BLOCKED (403) — free tier limitation confirmed again
-- **Note**: tweet.cjs script returns 403 but direct API call works — likely newline handling issue in the script. Used API directly.
+## Engagement Rules
+- Reply to EVERY person who drops a wallet or asks a question
+- Like and engage with Solana ecosystem posts naturally
+- When someone tweets about wallet issues, offer help genuinely (no hard sell)
+- Retweet/quote interesting Solana security discussions with our perspective
 
-## Activity Log (2026-03-03 15:00 UTC — Round 2)
-- **Search**: 10 results for "Solana wallet drained OR scam OR rug pull OR token security"
-- **Likes**: 4 — tweets 2028847440078471516 (rug pull detected - Jellybean), 2028846088250360293 ($SANAE scam alert), 2028845634581635408 (Solana rugpull discussion), 2028844917334700361 ($MNT cross-ecosystem security)
-- **Follows**: 2 — accounts 2017888333737709568 (rug pull detector bot), 2028539115739009024 ($SANAE scam warner)
-- **Mentions**: 4 found, all previously replied to — no new ones
-- **Original tweet**: BLOCKED (403) — free tier tweet creation still failing
-- **Quote tweet**: BLOCKED (403) — free tier can't quote unmentioned tweets
-- **Note**: Tweet creation has been 403 for multiple rounds now. Free tier appears to have lost write access. Bobo needs to check X Developer Portal — may need to upgrade to Basic tier ($100/mo) or regenerate keys with proper write scopes.
-
-## Activity Log (2026-03-03 20:00 UTC — Round 3)
-- **ALL API CALLS RETURNING 401** — OAuth (search, me, likes), Bearer (search) all unauthorized
-- API keys are present in .env but credentials appear revoked/expired
-- No actions taken: no search, no likes, no follows, no tweet, no mentions check
-- **ACTION NEEDED**: Bobo must regenerate ALL API keys in X Developer Portal (developer.x.com)
-  - Regenerate: API Key, API Secret, Bearer Token, Access Token, Access Token Secret
-  - Ensure app has "Read and Write" permissions
-  - Update .env with new credentials
-- **Disabling cron job until keys are fixed** — no point burning rounds on 401s
-
-## Rules
-- No spamming — quality > quantity
-- ~70% pure value, ~30% ShieldFi mentions
-- Avoid engaging with competitors directly
-- Vary tone: informative, witty, cautionary
-- Always include shieldfi.app link in ~1/3 of tweets
+## Weekly Content Calendar
+- Mon: Educational post
+- Tue: Engagement / interactive
+- Wed: Insight / data
+- Thu: Educational or product update
+- Fri: Community ("Free Scan Friday" or engagement post)
+- Sat-Sun: Light engagement only, no new posts
