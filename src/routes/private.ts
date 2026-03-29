@@ -5,10 +5,10 @@ const DASHBOARD_PATH = '/home/bobo_kovacevic/.openclaw/workspace/zagreb-apartmen
 const ACCESS_KEY = 'BobosApartments2026';
 
 export async function privateRoutes(app: FastifyInstance) {
-  // Robots.txt with /d/ disallowed
+  // Robots.txt — SEO-optimized
   app.get('/robots.txt', async (_req, reply) => {
     reply.type('text/plain').send(
-      `User-agent: *\nAllow: /\nDisallow: /d/\n`
+      `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /d/\n\nSitemap: https://shieldfi.app/sitemap.xml\n`
     );
   });
 

@@ -51,10 +51,10 @@ Share interesting findings without FUD.
 - ❌ Hashtag stuffing at the end of tweets — if you need hashtags, weave them naturally or skip them entirely
 - ❌ Sounding like a brand account — we're a builder sharing what we're working on
 
-## Hashtags (subtle, max 2 per tweet)
-- #Solana #Web3 (primary)
-- #DeFi #WalletSecurity (secondary, only when relevant)
-- Never hashtag-stuff
+## Hashtags
+- **Standard set (every tweet):** #Solana #DeFiSecurity #WalletSecurity
+- Keep all three consistent — no rotation, no extras
+- Place at end of tweet
 
 ## Engagement Rules
 - Reply to EVERY person who drops a wallet or asks a question

@@ -1,23 +1,10 @@
 #!/usr/bin/env node
 // Usage: node scripts/tweet.js "Your tweet text here"
-// Posts a single tweet via the X/Twitter API using credentials from .env
+// Posts a single tweet via xurl CLI (more reliable than twitter-api-v2 which gives 403)
 
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { config } from 'dotenv';
-import { TwitterApi } from 'twitter-api-v2';
+import { execSync } from 'child_process';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-config({ path: join(__dirname, '..', '.env') });
-
-const client = new TwitterApi({
-  appKey: process.env.X_API_KEY,
-  appSecret: process.env.X_API_SECRET,
-  accessToken: process.env.X_ACCESS_TOKEN,
-  accessSecret: process.env.X_ACCESS_TOKEN_SECRET,
-});
-
-async function main() {
+function main() {
   const text = process.argv[2];
   if (!text) {
     console.error('Usage: node scripts/tweet.js "tweet text"');
@@ -25,11 +12,14 @@ async function main() {
   }
 
   try {
-    const result = await client.v2.tweet(text);
-    console.log(JSON.stringify({ id: result.data.id, text: result.data.text }));
+    const result = execSync(`xurl post ${JSON.stringify(text)}`, {
+      encoding: 'utf8',
+      timeout: 30000,
+    });
+    console.log(result.trim());
   } catch (err) {
     console.error('Tweet failed:', err.message);
-    if (err.data) console.error('API response:', JSON.stringify(err.data));
+    if (err.stderr) console.error('stderr:', err.stderr);
     process.exit(1);
   }
 }
