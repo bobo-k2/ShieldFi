@@ -13,8 +13,17 @@ export async function getPlan(walletAddress: string): Promise<'free' | 'guardian
     return sub.plan as 'guardian' | 'sentinel';
   }
 
-  // Grace period
-  if (sub.expiresAt <= now && (now.getTime() - sub.expiresAt.getTime()) < GRACE_PERIOD_MS) {
+  // Grace period — check status='grace' or fall back to date math
+  if (sub.status === 'grace') {
+    const graceEnd = new Date(sub.expiresAt.getTime() + GRACE_PERIOD_MS);
+    if (now < graceEnd) {
+      return sub.plan as 'guardian' | 'sentinel';
+    }
+    return 'free';
+  }
+
+  // Backward-compatible date-based grace period check
+  if (sub.status === 'active' && sub.expiresAt <= now && (now.getTime() - sub.expiresAt.getTime()) < GRACE_PERIOD_MS) {
     return sub.plan as 'guardian' | 'sentinel';
   }
 

@@ -16,6 +16,7 @@ import { webhookRoutes } from './routes/webhooks.js';
 import { monitorRoutes } from './routes/monitor.js';
 import { monitorManager } from './services/monitorManager.js';
 import { startTelegramBot } from './services/telegramBot.js';
+import { startExpiryChecker } from './services/subscriptionExpiry.js';
 import { transactionRoutes } from './routes/transactions.js';
 import { riskAnalysisRoutes } from './routes/risk-analysis.js';
 import { subscriptionRoutes } from './routes/subscription.js';
@@ -81,4 +82,6 @@ app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
   monitorManager.start(120000); // 2 minutes — reduced from 30s to avoid Helius rate limits
   // Start Telegram bot for /start link commands
   startTelegramBot();
+  // Start subscription expiry checker (runs every hour)
+  startExpiryChecker();
 });

@@ -46,6 +46,23 @@ export async function subscriptionRoutes(app: FastifyInstance) {
     const plan = await getPlan(wallet);
     const sub = await prisma.subscription.findUnique({ where: { walletAddress: wallet } });
 
+    let warning: { level: string; message: string; daysLeft: number } | null = null;
+    if (sub && sub.status !== 'expired') {
+      const now = new Date();
+      const GRACE_MS = 3 * 24 * 60 * 60 * 1000;
+
+      if (sub.status === 'grace') {
+        const graceEnd = new Date(sub.expiresAt.getTime() + GRACE_MS);
+        const daysLeft = Math.max(0, Math.ceil((graceEnd.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
+        warning = { level: 'danger', message: `Grace period: ${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining`, daysLeft };
+      } else if (sub.status === 'active') {
+        const daysLeft = Math.ceil((sub.expiresAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+        if (daysLeft <= 7 && daysLeft > 0) {
+          warning = { level: 'warning', message: `Plan expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`, daysLeft };
+        }
+      }
+    }
+
     return {
       plan,
       subscription: sub ? {
@@ -54,6 +71,7 @@ export async function subscriptionRoutes(app: FastifyInstance) {
         expiresAt: sub.expiresAt,
         startsAt: sub.startsAt,
       } : null,
+      warning,
     };
   });
 

@@ -163,6 +163,15 @@
   /* Fade animation */
   @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
+  /* Subscription warning banner */
+  .sub-warning-banner{padding:1rem 1.5rem;border-radius:10px;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;animation:fadeUp .4s ease both}
+  .sub-warning-banner.warning{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--warning)}
+  .sub-warning-banner.danger{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--danger)}
+  .sub-warning-banner .banner-text{font-size:.9rem;font-weight:500}
+  .sub-warning-banner .btn-renew{padding:8px 18px;border-radius:8px;font-size:.85rem;font-weight:600;border:none;cursor:pointer;text-decoration:none;white-space:nowrap}
+  .sub-warning-banner.warning .btn-renew{background:var(--warning);color:#000}
+  .sub-warning-banner.danger .btn-renew{background:var(--danger);color:#fff}
+
   /* Responsive */
   @media(max-width:640px){
     .topnav{padding:.5rem .75rem;align-items:center}
@@ -222,6 +231,12 @@
 <div class="toast-container" id="toasts"></div>
 
 <div class="container">
+
+  <!-- Subscription Warning Banner -->
+  <div id="subWarningBanner" class="sub-warning-banner" style="display:none">
+    <span class="banner-text" id="subWarningText"></span>
+    <a href="/pricing.html" class="btn-renew">Renew Now</a>
+  </div>
 
   <!-- Scan Section -->
   <div class="scan-section">
@@ -594,6 +609,7 @@ async function lookupWallet(){
     $('monitorSection').style.display='block';
     $('riskAnalysis').style.display='block';
     checkMonitorStatus(addr);
+    checkSubWarning(addr);
     // Always auto-trigger risk analysis on scan
     setTimeout(()=>runRiskAnalysis(),300);
   }catch(e){
@@ -947,6 +963,23 @@ function shareWallet(){
   const xUrl='https://x.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(url);
   window.open(xUrl,'_blank');
   trackEvent('share',addr);
+}
+
+/* ---- Subscription warning banner ---- */
+async function checkSubWarning(addr){
+  try{
+    const res=await fetch('/api/subscription/status?wallet='+encodeURIComponent(addr));
+    if(!res.ok)return;
+    const data=await res.json();
+    const banner=$('subWarningBanner');
+    if(data.warning){
+      banner.className='sub-warning-banner '+(data.warning.level==='danger'?'danger':'warning');
+      $('subWarningText').textContent=data.warning.message;
+      banner.style.display='flex';
+    }else{
+      banner.style.display='none';
+    }
+  }catch(e){console.error('Sub warning check failed:',e)}
 }
 
 /* ---- URL param / path auto-scan ---- */

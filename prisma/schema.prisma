@@ -154,9 +154,11 @@ model Subscription {
   paymentMint   String?
   amountPaid    Float?
   startsAt      DateTime @default(now())
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  expiresAt            DateTime
+  lastNotifiedAt       DateTime?
+  lastNotificationType String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@map("subscriptions")
 }
