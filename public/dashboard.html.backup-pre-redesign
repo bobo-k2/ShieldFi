@@ -11,6 +11,7 @@
 <meta property="og:description" content="Paste any Solana address to detect suspicious tokens, analyze smart contract risks, and check transaction history.">
 <meta property="og:image" content="https://shieldfi.app/logo.jpg">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@ShieldFiApp">
 <meta name="twitter:title" content="ShieldFi Dashboard — Scan Your Solana Wallet">
 <meta name="twitter:description" content="Paste any Solana address to detect suspicious tokens, analyze smart contract risks, and check transaction history.">
 <meta name="twitter:image" content="https://shieldfi.app/logo.jpg">
@@ -19,144 +20,138 @@
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:smooth;font-size:120%}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#06060b;color:#e2e2ea;min-height:100vh;line-height:1.6}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#e0e0e0;min-height:100vh;line-height:1.6}
 
-  body::before{content:'';position:fixed;inset:0;background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99,102,241,.08), transparent),
-    linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
-  background-size:100% 100%,72px 72px,72px 72px;pointer-events:none;z-index:0}
-
-  :root{--accent:#818cf8;--accent-bright:#a5b4fc;--accent-glow:rgba(129,140,248,.15);--surface-1:#0d0d14;--border:rgba(255,255,255,.06);--border-solid:#1a1a28;--text-secondary:#7a7a8e;--text-muted:#4a4a5c;--success:#34d399;--danger:#f87171;--warning:#fbbf24}
+  /* Grid bg */
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:64px 64px;pointer-events:none;z-index:0}
 
   /* Nav */
-  .topnav{position:sticky;top:0;z-index:100;padding:.875rem 2rem;display:flex;justify-content:space-between;align-items:center;background:rgba(6,6,11,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
-  .nav-logo{font-size:1.15rem;font-weight:700;text-decoration:none;color:#e2e2ea;display:flex;align-items:center;gap:.5rem;letter-spacing:-.01em}
-  .nav-logo .logo-icon{width:36px;height:36px;flex-shrink:0}
+  .topnav{position:sticky;top:0;z-index:100;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;background:rgba(10,10,10,.9);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.04)}
+  .nav-logo{font-size:1.15rem;font-weight:700;text-decoration:none;background:linear-gradient(135deg,#00d4aa,#7b61ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:flex;align-items:center}
   .nav-right{display:flex;align-items:center;gap:.75rem}
-  .wallet-pill{font-family:monospace;font-size:.8rem;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--border);padding:6px 12px;border-radius:20px;cursor:pointer;transition:border-color .2s;display:inline-flex;align-items:center}
-  .wallet-pill:hover{border-color:var(--accent)}
+  .wallet-pill{font-family:monospace;font-size:.8rem;color:#888;background:#111118;border:1px solid #1a1a2e;padding:6px 12px;border-radius:20px;cursor:pointer;transition:border-color .2s;display:inline-flex;align-items:center}
+  .wallet-pill:hover{border-color:#00d4aa}
 
   .container{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:1.5rem}
 
   /* Buttons */
-  .btn{padding:10px 20px;background:var(--accent);color:#fff !important;font-weight:600;border:none;border-radius:8px;cursor:pointer;font-size:.9rem;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
-  .btn:hover{background:var(--accent-bright);box-shadow:0 0 24px var(--accent-glow)}
+  .btn{padding:10px 20px;background:linear-gradient(135deg,#00d4aa,#7b61ff);color:#000;font-weight:600;border:none;border-radius:8px;cursor:pointer;font-size:.9rem;transition:opacity .2s,transform .15s,box-shadow .2s;display:inline-flex;align-items:center;gap:.4rem}
+  .btn:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,212,170,.2)}
   .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-  .btn-revoke{background:var(--danger);color:#fff;padding:6px 14px;font-size:.8rem;border-radius:6px}
-  .btn-revoke:hover{background:#ef4444;box-shadow:0 2px 10px rgba(248,113,113,.3)}
-  .btn-outline{background:transparent;border:1px solid rgba(255,255,255,.1);color:var(--text-secondary) !important}
-  .btn-outline:hover{border-color:var(--accent);color:var(--accent) !important;background:transparent}
+  .btn-revoke{background:#ff4444;color:#fff;padding:6px 14px;font-size:.8rem;border-radius:6px}
+  .btn-revoke:hover{background:#ff2222;box-shadow:0 2px 10px rgba(255,68,68,.3)}
+  .btn-outline{background:transparent;border:1px solid #00d4aa;color:#00d4aa}
+  .btn-outline:hover{background:rgba(0,212,170,.08)}
   .btn-sm{padding:8px 16px;font-size:.85rem}
 
-  /* Scan input */
-  .scan-section{margin-bottom:2rem;padding:1.5rem;background:var(--surface-1);border:1px solid var(--border);border-radius:14px}
-  .scan-section .label{font-size:.85rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem}
+  /* Scan input - prominent */
+  .scan-section{margin-bottom:2rem;padding:1.5rem;background:#111118;border:1px solid #1a1a2e;border-radius:14px}
+  .scan-section .label{font-size:.85rem;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem}
   .scan-row{display:flex;gap:.5rem;align-items:stretch}
   .scan-row .btn{min-width:160px;flex-shrink:0;justify-content:center;white-space:nowrap}
-  .scan-input{flex:1;padding:14px 18px;background:#06060b;border:1px solid var(--border);border-radius:10px;color:#e2e2ea;font-family:'SF Mono','JetBrains Mono',monospace;font-size:.95rem;outline:none;transition:border-color .2s,box-shadow .2s}
-  .scan-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
-  .scan-input::placeholder{color:var(--text-muted)}
+  .scan-input{flex:1;padding:14px 18px;background:#0a0a0a;border:1px solid #2a2a3e;border-radius:10px;color:#e0e0e0;font-family:monospace;font-size:.95rem;outline:none;transition:border-color .2s,box-shadow .2s}
+  .scan-input:focus{border-color:#00d4aa;box-shadow:0 0 0 3px rgba(0,212,170,.08)}
+  .scan-input::placeholder{color:#3a3a4e}
 
   /* Cards */
   .stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
-  .stat-card{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:1.25rem;transition:border-color .2s,box-shadow .2s}
-  .stat-card:hover{border-color:rgba(129,140,248,.2);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+  .stat-card{background:#111118;border:1px solid #1a1a2e;border-radius:12px;padding:1.25rem;transition:border-color .2s,box-shadow .2s}
+  .stat-card:hover{border-color:rgba(0,212,170,.2);box-shadow:0 4px 20px rgba(0,0,0,.3)}
   .stat-card .stat-icon{font-size:1.5rem;margin-bottom:.5rem;display:block}
-  .stat-card.risk-safe{border-color:rgba(52,211,153,.25);background:linear-gradient(135deg,rgba(52,211,153,.06),transparent)}
-  .stat-card.risk-medium{border-color:rgba(251,191,36,.25);background:linear-gradient(135deg,rgba(251,191,36,.06),transparent)}
-  .stat-card.risk-high{border-color:rgba(248,113,113,.25);background:linear-gradient(135deg,rgba(248,113,113,.06),transparent)}
+  .stat-card.risk-safe{border-color:rgba(0,212,170,.25);background:linear-gradient(135deg,rgba(0,212,170,.06),transparent)}
+  .stat-card.risk-medium{border-color:rgba(255,167,38,.25);background:linear-gradient(135deg,rgba(255,167,38,.06),transparent)}
+  .stat-card.risk-high{border-color:rgba(255,102,68,.25);background:linear-gradient(135deg,rgba(255,102,68,.06),transparent)}
   .stat-card.risk-critical{border-color:rgba(255,34,68,.25);background:linear-gradient(135deg,rgba(255,34,68,.06),transparent)}
-  .stat-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.4rem}
+  .stat-label{font-size:.7rem;color:#666;text-transform:uppercase;letter-spacing:.8px;margin-bottom:.4rem}
   .stat-value{font-size:2rem;font-weight:800;letter-spacing:-.02em}
-  .score-good{color:var(--success)}
-  .score-warn{color:var(--warning)}
-  .score-bad{color:var(--danger)}
+  .score-good{color:#00d4aa}
+  .score-warn{color:#ffaa00}
+  .score-bad{color:#ff4444}
 
   /* SOL hero card */
-  .sol-hero{background:linear-gradient(135deg,rgba(129,140,248,.08),rgba(99,102,241,.08));border:1px solid rgba(129,140,248,.15);border-radius:14px;padding:2rem;text-align:center;margin-bottom:2rem}
+  .sol-hero{background:linear-gradient(135deg,rgba(0,212,170,.08),rgba(123,97,255,.08));border:1px solid rgba(0,212,170,.15);border-radius:14px;padding:2rem;text-align:center;margin-bottom:2rem}
   .sol-hero .amount{font-size:2.5rem;font-weight:800}
-  .sol-hero .usd{font-size:1.1rem;color:var(--text-secondary);margin-top:.25rem}
-  .sol-hero .label{font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem}
+  .sol-hero .usd{font-size:1.1rem;color:#888;margin-top:.25rem}
+  .sol-hero .label{font-size:.8rem;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem}
 
   /* Section */
   .section{margin-bottom:2rem;animation:fadeUp .4s ease both}
-  .section-title{font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+  .section-title{font-size:.85rem;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
   .info-icon{cursor:pointer;font-size:.7rem;opacity:.6;transition:opacity .2s;vertical-align:middle}
   .info-icon:hover{opacity:1}
-  .info-popup{position:absolute;top:100%;left:0;right:0;margin-top:6px;background:var(--surface-1);border:1px solid #252540;border-radius:10px;padding:.75rem;z-index:50;color:#999;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  .info-popup{position:absolute;top:100%;left:0;right:0;margin-top:6px;background:#111118;border:1px solid #252540;border-radius:10px;padding:.75rem;z-index:50;color:#999;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.5)}
   .stat-card{position:relative}
-  .section-title .caret{margin-left:auto;background:var(--border-solid, #1a1a28);border:1px solid #252540;border-radius:6px;padding:4px 8px;transition:all .2s;display:inline-flex;align-items:center}
+  .section-title .caret{margin-left:auto;background:#1a1a2e;border:1px solid #252540;border-radius:6px;padding:4px 8px;transition:all .2s;display:inline-flex;align-items:center}
   .section-title .caret svg{width:14px;height:14px;stroke:#555;transition:transform .2s}
-  .section-title:hover .caret{border-color:var(--accent)40}
-  .section-title:hover .caret svg{stroke:#818cf8}
+  .section-title:hover .caret{border-color:#7b61ff40}
+  .section-title:hover .caret svg{stroke:#7b61ff}
   .section-title .caret.collapsed svg{transform:rotate(-90deg)}
-  .section-card{background:var(--surface-1);border:1px solid var(--border-solid, #1a1a28);border-radius:14px;padding:1.5rem}
+  .section-card{background:#111118;border:1px solid #1a1a2e;border-radius:14px;padding:1.5rem}
 
   /* Token grid */
   .token-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.75rem}
-  .token-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:#06060b;border:1px solid var(--border-solid, #1a1a28);border-radius:10px;transition:border-color .2s}
-  .token-item:hover{border-color:rgba(129,140,248,.2)}
-  .token-icon{width:36px;height:36px;border-radius:50%;background:var(--border-solid, #1a1a28);display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--text-muted);overflow:hidden;flex-shrink:0}
+  .token-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:#0a0a0a;border:1px solid #151520;border-radius:10px;transition:border-color .2s}
+  .token-item:hover{border-color:rgba(0,212,170,.2)}
+  .token-icon{width:36px;height:36px;border-radius:50%;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:#555;overflow:hidden;flex-shrink:0}
   .token-icon img{width:100%;height:100%;object-fit:cover}
   .token-info{flex:1;min-width:0}
   .token-symbol{font-weight:600;font-size:.9rem}
   .token-balance{font-family:monospace;font-size:.85rem;color:#aaa}
-  .token-usd{font-family:monospace;font-size:.85rem;color:var(--success);text-align:right;white-space:nowrap}
+  .token-usd{font-family:monospace;font-size:.85rem;color:#00d4aa;text-align:right;white-space:nowrap}
 
   /* Approval cards */
-  .approval-card{padding:1rem;background:#06060b;border:1px solid var(--border-solid, #1a1a28);border-radius:10px;margin-bottom:.5rem;transition:border-color .2s}
+  .approval-card{padding:1rem;background:#0a0a0a;border:1px solid #151520;border-radius:10px;margin-bottom:.5rem;transition:border-color .2s}
   .approval-card:hover{border-color:rgba(255,100,68,.2)}
   .approval-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
-  .approval-detail{display:flex;gap:1.5rem;margin-top:.5rem;font-size:.8rem;color:var(--text-muted);flex-wrap:wrap}
+  .approval-detail{display:flex;gap:1.5rem;margin-top:.5rem;font-size:.8rem;color:#666;flex-wrap:wrap}
 
   /* Badge */
   .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
-  .badge-LOW{background:rgba(52,211,153,.1);color:var(--success)}
-  .badge-MEDIUM{background:rgba(255,170,0,.1);color:var(--warning)}
-  .badge-HIGH{background:rgba(255,100,68,.1);color:var(--danger)}
+  .badge-LOW{background:rgba(0,212,170,.1);color:#00d4aa}
+  .badge-MEDIUM{background:rgba(255,170,0,.1);color:#ffaa00}
+  .badge-HIGH{background:rgba(255,100,68,.1);color:#ff6644}
   .badge-CRITICAL{background:rgba(255,0,68,.1);color:#ff0044}
 
   /* Timeline tx */
-  .tx-item{padding:.75rem 1rem;background:#06060b;border:1px solid var(--border-solid, #1a1a28);border-left:3px solid #555;border-radius:8px;margin-bottom:.5rem;transition:border-color .2s}
+  .tx-item{padding:.75rem 1rem;background:#0a0a0a;border:1px solid #151520;border-left:3px solid #555;border-radius:8px;margin-bottom:.5rem;transition:border-color .2s}
   .tx-item:hover{border-color:rgba(123,97,255,.3)}
   .tx-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
   .tx-desc{font-size:.85rem;color:#aaa;margin-top:4px}
   .tx-transfers{font-family:monospace;font-size:.8rem;color:#ccc;margin-top:4px}
-  .tx-link{font-size:.78rem;color:var(--accent);text-decoration:none;margin-top:4px;display:inline-block}
+  .tx-link{font-size:.78rem;color:#7b61ff;text-decoration:none;margin-top:4px;display:inline-block}
   .tx-link:hover{text-decoration:underline}
-  .tx-time{font-size:.75rem;color:var(--text-muted)}
+  .tx-time{font-size:.75rem;color:#444}
 
   /* Loading skeleton */
-  .skeleton{background:linear-gradient(90deg,var(--surface-1) 25%,var(--border-solid, #1a1a28) 50%,var(--surface-1) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;height:20px;margin-bottom:.5rem}
+  .skeleton{background:linear-gradient(90deg,#111118 25%,#1a1a2e 50%,#111118 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;height:20px;margin-bottom:.5rem}
   .skeleton.h-lg{height:48px;border-radius:12px;margin-bottom:1rem}
   .skeleton.h-card{height:120px;border-radius:14px}
   @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
   /* Spinner */
-  .spinner{display:inline-block;width:20px;height:20px;border:2px solid #333;border-top-color:var(--success);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+  .spinner{display:inline-block;width:20px;height:20px;border:2px solid #333;border-top-color:#00d4aa;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
   @keyframes spin{to{transform:rotate(360deg)}}
 
   /* Toast */
   .toast-container{position:fixed;top:5rem;right:1.5rem;z-index:200;display:flex;flex-direction:column;gap:.5rem;pointer-events:none}
   .toast{padding:.75rem 1.25rem;border-radius:10px;font-size:.85rem;pointer-events:auto;animation:toastIn .3s ease;max-width:360px;backdrop-filter:blur(8px)}
-  .toast-success{background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);color:var(--success)}
-  .toast-error{background:rgba(255,68,68,.15);border:1px solid rgba(248,113,113,.3);color:#ff6666}
-  .toast-info{background:rgba(129,140,248,.15);border:1px solid rgba(129,140,248,.3);color:var(--accent-bright)}
+  .toast-success{background:rgba(0,212,170,.15);border:1px solid rgba(0,212,170,.3);color:#00d4aa}
+  .toast-error{background:rgba(255,68,68,.15);border:1px solid rgba(255,68,68,.3);color:#ff6666}
+  .toast-info{background:rgba(123,97,255,.15);border:1px solid rgba(123,97,255,.3);color:#b4a0ff}
   @keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
   @keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateX(20px)}}
 
   /* Empty state */
-  .empty-state{text-align:center;padding:4rem 2rem;color:var(--text-muted)}
+  .empty-state{text-align:center;padding:4rem 2rem;color:#444}
   .empty-state .empty-icon{font-size:3.5rem;margin-bottom:1rem;opacity:.6}
   .empty-state p{font-size:1rem;max-width:400px;margin:0 auto}
 
   /* Error */
-  .error-bar{position:fixed;top:4rem;left:50%;transform:translateX(-50%);background:rgba(255,68,68,.12);border:1px solid rgba(248,113,113,.3);color:#ff6666;padding:10px 24px;border-radius:10px;z-index:150;font-size:.85rem;backdrop-filter:blur(8px);animation:toastIn .3s ease}
+  .error-bar{position:fixed;top:4rem;left:50%;transform:translateX(-50%);background:rgba(255,68,68,.12);border:1px solid rgba(255,68,68,.3);color:#ff6666;padding:10px 24px;border-radius:10px;z-index:150;font-size:.85rem;backdrop-filter:blur(8px);animation:toastIn .3s ease}
 
   /* Copyable */
   .copyable{cursor:pointer;position:relative}
-  .copyable:hover{color:var(--success)}
+  .copyable:hover{color:#00d4aa}
   .copy-tip{position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:#00d4aa;color:#000;font-size:.7rem;padding:2px 8px;border-radius:4px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s}
   .copyable:hover .copy-tip{opacity:1}
 
@@ -195,15 +190,7 @@
 <body>
 
 <nav class="topnav">
-  <a href="/" class="nav-logo">
-    <svg class="logo-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="shieldGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a5b4fc"/><stop offset="100%" stop-color="#6366f1"/></linearGradient></defs>
-      <path d="M18 2L4 8v10c0 8.5 6 15.5 14 18 8-2.5 14-9.5 14-18V8L18 2z" fill="url(#shieldGrad)" opacity="0.15"/>
-      <path d="M18 2L4 8v10c0 8.5 6 15.5 14 18 8-2.5 14-9.5 14-18V8L18 2z" stroke="url(#shieldGrad)" stroke-width="1.5" fill="none"/>
-      <path d="M12 18l4 4 8-8" stroke="#a5b4fc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    </svg>
-    ShieldFi
-  </a>
+  <a href="/" class="nav-logo"><img src="/logo.jpg" alt="ShieldFi" style="height:44px;vertical-align:middle;border-radius:4px;margin-right:8px">ShieldFi</a>
   <div class="nav-right">
     <a href="/pricing.html" class="btn btn-sm btn-outline" id="upgradeLink" style="display:none">⭐ Upgrade</a>
     <span class="wallet-pill" id="planBadge" style="display:none"></span>
@@ -211,7 +198,7 @@
       <span class="wallet-pill" id="walletDisplay" style="display:none;cursor:pointer" onclick="toggleWalletMenu()" title="Click for options"></span>
       <div id="walletMenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden;min-width:150px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.5)">
         <button onclick="copyAddr(document.getElementById('walletDisplay').dataset.full);hideWalletMenu()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;color:#ccc;text-align:left;cursor:pointer;font-size:.85rem;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background='none'">Copy Address</button>
-        <button onclick="disconnect();hideWalletMenu()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;color:var(--danger);text-align:left;cursor:pointer;font-size:.85rem;white-space:nowrap" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background='none'">Disconnect</button>
+        <button onclick="disconnect();hideWalletMenu()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;color:#ff4444;text-align:left;cursor:pointer;font-size:.85rem;white-space:nowrap" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background='none'">Disconnect</button>
       </div>
     </div>
     <button class="btn btn-sm" id="connectBtn" onclick="connect()">Connect Wallet</button>
@@ -229,7 +216,7 @@
     <div class="scan-row">
       <input class="scan-input" id="lookupAddr" type="text" placeholder="Paste any Solana address…" autocomplete="off">
       <button class="btn" id="lookupBtn" onclick="lookupWallet()">Scan</button>
-      <button class="btn" id="shareBtn" onclick="shareWallet()" style="display:none;background:var(--border-solid, #1a1a28);border:1px solid #444;font-size:.85rem;color:#e0e0e0;gap:.45rem" title="Share on X"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>Share</span></button>
+      <button class="btn" id="shareBtn" onclick="shareWallet()" style="display:none;background:#1a1a2e;border:1px solid #444;font-size:.85rem;color:#e0e0e0;gap:.45rem" title="Share on X"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>Share</span></button>
     </div>
   </div>
 
@@ -239,10 +226,10 @@
       <div id="riskInfo" class="info-popup" style="display:none">
         <div style="font-size:.8rem;font-weight:600;margin-bottom:6px;color:#fff">Risk Levels</div>
         <div style="display:flex;flex-direction:column;gap:4px;font-size:.75rem">
-          <div><span style="color:var(--success);font-weight:600">SAFE</span> — No risks detected, all tokens verified</div>
-          <div><span style="color:var(--success);font-weight:600">LOW</span> — Minor unknowns, no active threats</div>
+          <div><span style="color:#00d4aa;font-weight:600">SAFE</span> — No risks detected, all tokens verified</div>
+          <div><span style="color:#00d4aa;font-weight:600">LOW</span> — Minor unknowns, no active threats</div>
           <div><span style="color:#ffa726;font-weight:600">MEDIUM</span> — Some suspicious tokens or unverified approvals</div>
-          <div><span style="color:var(--danger);font-weight:600">HIGH</span> — Dangerous tokens, fake impersonators, risky approvals</div>
+          <div><span style="color:#ff6644;font-weight:600">HIGH</span> — Dangerous tokens, fake impersonators, risky approvals</div>
           <div><span style="color:#ff2244;font-weight:600">CRITICAL</span> — Active threats, unlimited approvals to unknown spenders</div>
         </div>
       </div>
@@ -259,7 +246,7 @@
         <span id="monitorStatus" style="font-size:.8rem"></span>
       </div>
       <button class="btn" id="monitorBtn" onclick="toggleMonitor()" style="width:100%">🔔 Start Monitoring</button>
-      <div id="telegramLink" style="display:none;margin-top:1rem;padding:1rem;background:#06060b;border:1px solid var(--border-solid, #1a1a28);border-radius:10px">
+      <div id="telegramLink" style="display:none;margin-top:1rem;padding:1rem;background:#0a0a0a;border:1px solid #1a1a2e;border-radius:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
           <span id="telegramStatus" style="font-size:.85rem"></span>
           <button class="btn btn-sm" id="telegramBtn" onclick="linkTelegram()">📱 Connect Telegram</button>
@@ -274,10 +261,10 @@
     <div class="section-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
         <div class="section-title" style="margin:0">🤖 AI Risk Analysis</div>
-        <span id="riskAnalysisStatus" style="font-size:.8rem;color:var(--text-muted)"></span>
+        <span id="riskAnalysisStatus" style="font-size:.8rem;color:#555"></span>
       </div>
       <button class="btn" id="riskAnalysisBtn" onclick="runRiskAnalysis()" style="width:100%">🔬 Run Deep Analysis</button>
-      <div id="riskSummary" style="display:none;margin-top:1rem;padding:1rem;background:#06060b;border:1px solid var(--border-solid, #1a1a28);border-radius:10px">
+      <div id="riskSummary" style="display:none;margin-top:1rem;padding:1rem;background:#0a0a0a;border:1px solid #1a1a2e;border-radius:10px">
         <div id="riskSummaryText"></div>
       </div>
       <div id="tokenReports" style="margin-top:1rem"></div>
@@ -389,7 +376,7 @@ function setTokenStats(balances){
   const unknown=spl.filter(b=>b.status==='unknown').length;
   const suspicious=spl.filter(b=>b.status==='suspicious').length;
   const total=spl.length;
-  $('tokenCount').innerHTML=total?`${total}<div style="font-size:.75rem;color:var(--text-secondary);margin-top:2px;line-height:1.3"><span style="color:var(--success)">${verified}✓</span> · <span style="color:var(--text-secondary)">${unknown}?</span> · <span style="color:var(--danger)">${suspicious}⚠</span></div>`:'—';
+  $('tokenCount').innerHTML=total?`${total}<div style="font-size:.75rem;color:#888;margin-top:2px;line-height:1.3"><span style="color:#00d4aa">${verified}✓</span> · <span style="color:#888">${unknown}?</span> · <span style="color:#ff6644">${suspicious}⚠</span></div>`:'—';
   const el=$('suspiciousCount');
   el.textContent=suspicious.toString();
   el.className='stat-value '+(suspicious===0?'score-good':suspicious<=2?'score-warn':'score-bad');
@@ -480,7 +467,7 @@ async function checkSubscription(){
     const badge=$('planBadge');
     const link=$('upgradeLink');
     if(data.plan==='guardian'){badge.textContent='🛡️ Guardian';badge.style.display='inline-block';badge.style.borderColor='#00d4aa';badge.style.color='#00d4aa';link.style.display='none';}
-    else if(data.plan==='sentinel'){badge.textContent='⚔️ Sentinel';badge.style.display='inline-block';badge.style.borderColor='#818cf8';badge.style.color='#818cf8';link.style.display='none';}
+    else if(data.plan==='sentinel'){badge.textContent='⚔️ Sentinel';badge.style.display='inline-block';badge.style.borderColor='#7b61ff';badge.style.color='#7b61ff';link.style.display='none';}
     else{link.style.display='inline-flex';badge.style.display='none';}
   }catch(e){console.error('Sub check failed',e);$('upgradeLink').style.display='inline-flex';}
 }
@@ -546,7 +533,7 @@ function renderApprovals(approvals,score){
       </div>
       <div class="approval-detail">
         <span>Spender: ${copyable(a.spender)}</span>
-        <span>Amount: ${a.isUnlimited?'<span style="color:var(--danger)">♾️ Unlimited</span>':a.amount}</span>
+        <span>Amount: ${a.isUnlimited?'<span style="color:#ff6644">♾️ Unlimited</span>':a.amount}</span>
       </div>
     </div>`;
   }
@@ -610,10 +597,10 @@ function renderLookup(data){
   // Large wallet truncation banner
   if(data.truncated){
     const shown=(data.balances||[]).filter(b=>b.status!=='verified').length;
-    html+=`<div style="background:linear-gradient(135deg,var(--border-solid, #1a1a28),var(--surface-1));border:1px solid #818cf8;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem">
+    html+=`<div style="background:linear-gradient(135deg,#1a1a2e,#111118);border:1px solid #7b61ff;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem">
       <span style="font-size:1.5rem">🐋</span>
       <div>
-        <div style="font-weight:600;color:var(--accent);font-size:.95rem">Large Wallet Detected</div>
+        <div style="font-weight:600;color:#7b61ff;font-size:.95rem">Large Wallet Detected</div>
         <div style="color:#aaa;font-size:.82rem">Showing ${data.totalTokens-data.hiddenVerified} suspicious/unknown tokens. ${data.hiddenVerified} verified tokens hidden (wallet too large to display all).</div>
       </div>
     </div>`;
@@ -640,7 +627,7 @@ function renderLookup(data){
     const verifiedNonSol=verified.filter(b=>b.symbol!=='SOL');
     if(verifiedNonSol.length>0){
       const totalUsd=verified.reduce((s,b)=>s+(b.usdValue||0),0);
-      html+=`<div class="section" id="sectionVerified"><div class="section-title">✅ Verified Tokens <span style="color:var(--success);font-size:.8rem;font-weight:400;text-transform:none;letter-spacing:0">— ${fmtUsd(totalUsd)} total</span></div><div class="token-grid">`;
+      html+=`<div class="section" id="sectionVerified"><div class="section-title">✅ Verified Tokens <span style="color:#00d4aa;font-size:.8rem;font-weight:400;text-transform:none;letter-spacing:0">— ${fmtUsd(totalUsd)} total</span></div><div class="token-grid">`;
       for(const b of verifiedNonSol) html+=tokenCard(b,true);
       html+='</div></div>';
     }
@@ -652,8 +639,8 @@ function renderLookup(data){
     }
 
     if(suspicious.length>0){
-      html+=`<div class="section" id="sectionSuspicious"><div class="section-title" style="color:var(--danger)">⚠️ Suspicious Tokens (${suspicious.length})</div>
-        <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:.75rem">These tokens may be scam airdrops. Do not interact with them.</div>
+      html+=`<div class="section" id="sectionSuspicious"><div class="section-title" style="color:#ff6644">⚠️ Suspicious Tokens (${suspicious.length})</div>
+        <div style="font-size:.8rem;color:#555;margin-bottom:.75rem">These tokens may be scam airdrops. Do not interact with them.</div>
         <div class="token-grid">`;
       for(const b of suspicious)html+=tokenCard(b,false);
       html+='</div></div>';
@@ -676,7 +663,7 @@ function renderLookup(data){
         </div>
         <div class="approval-detail">
           <span>Spender: ${copyable(a.spender)}</span>
-          <span>Amount: ${a.isUnlimited?'<span style="color:var(--danger)">♾️ Unlimited</span>':a.amount}</span>
+          <span>Amount: ${a.isUnlimited?'<span style="color:#ff6644">♾️ Unlimited</span>':a.amount}</span>
         </div>
       </div>`;
     }
@@ -699,7 +686,7 @@ function tokenCard(b,showUsd){
   return `<a href="${solscanUrl}" target="_blank" rel="noopener" class="token-item" style="text-decoration:none;color:inherit">
     <div class="token-icon">${icon}</div>
     <div class="token-info">
-      <div class="token-symbol">${b.symbol}${b.flags&&b.flags.length?` <span style="font-size:.7rem;color:var(--danger)" title="${b.flags.join(', ')}">⚠</span>`:''}</div>
+      <div class="token-symbol">${b.symbol}${b.flags&&b.flags.length?` <span style="font-size:.7rem;color:#ff6644" title="${b.flags.join(', ')}">⚠</span>`:''}</div>
       <div class="token-balance">${fmt(b.balance,4)}</div>
     </div>
     ${showUsd&&b.usdValue?`<div class="token-usd">${fmtUsd(b.usdValue)}</div>`:''}
@@ -707,7 +694,7 @@ function tokenCard(b,showUsd){
 }
 
 /* ---- Transactions ---- */
-const TX_TYPE_COLORS={SWAP:'#818cf8',TRANSFER:'#34d399',NFT_SALE:'#ff6644',NFT_MINT:'#ffaa00',NFT_LISTING:'#ff8844',BURN:'#ff4444',STAKE:'#44aaff',UNSTAKE:'#4488ff',COMPRESSED_NFT_MINT:'#ffaa00',TOKEN_MINT:'#44ddaa',UNKNOWN:'#555'};
+const TX_TYPE_COLORS={SWAP:'#7b61ff',TRANSFER:'#00d4aa',NFT_SALE:'#ff6644',NFT_MINT:'#ffaa00',NFT_LISTING:'#ff8844',BURN:'#ff4444',STAKE:'#44aaff',UNSTAKE:'#4488ff',COMPRESSED_NFT_MINT:'#ffaa00',TOKEN_MINT:'#44ddaa',UNKNOWN:'#555'};
 
 async function loadTransactions(addr){
   const container=document.createElement('div');
@@ -725,7 +712,7 @@ async function loadTransactions(addr){
     const txs=data.transactions||[];
 
     if(!txs.length){
-      container.innerHTML='<div class="section-title">📜 Recent Activity</div><div style="color:var(--text-muted);text-align:center;padding:1.5rem">No recent transactions found.</div>';
+      container.innerHTML='<div class="section-title">📜 Recent Activity</div><div style="color:#444;text-align:center;padding:1.5rem">No recent transactions found.</div>';
       return;
     }
 
@@ -763,7 +750,7 @@ async function loadTransactions(addr){
     html+='</div>'; // close collapsible
     container.innerHTML=html;
   }catch{
-    container.innerHTML='<div class="section-title">📜 Recent Activity</div><div style="color:var(--text-muted);text-align:center;padding:1.5rem">Failed to load transactions.</div>';
+    container.innerHTML='<div class="section-title">📜 Recent Activity</div><div style="color:#444;text-align:center;padding:1.5rem">Failed to load transactions.</div>';
   }
 }
 
@@ -775,16 +762,16 @@ async function checkMonitorStatus(addr){
     if(data.isMonitored){
       $('monitorBtn').textContent='🔴 Stop Monitoring';
       $('monitorBtn').onclick=()=>stopMonitor(addr);
-      $('monitorStatus').innerHTML='<span style="color:var(--success)">🟢 Active</span>'+(data.lastCheckedAt?' — last: '+new Date(data.lastCheckedAt).toLocaleTimeString():'');
+      $('monitorStatus').innerHTML='<span style="color:#00d4aa">🟢 Active</span>'+(data.lastCheckedAt?' — last: '+new Date(data.lastCheckedAt).toLocaleTimeString():'');
       loadMonitorAlerts(addr);
       // Show Telegram link section
       $('telegramLink').style.display='block';
       if(data.telegramLinked){
-        $('telegramStatus').innerHTML='✅ <span style="color:var(--success)">Telegram connected</span>';
+        $('telegramStatus').innerHTML='✅ <span style="color:#00d4aa">Telegram connected</span>';
         $('telegramBtn').textContent='🔓 Unlink Telegram';
         $('telegramBtn').onclick=()=>unlinkTelegram(addr);
       }else{
-        $('telegramStatus').innerHTML='📭 <span style="color:var(--text-secondary)">No Telegram linked — alerts won\'t be sent</span>';
+        $('telegramStatus').innerHTML='📭 <span style="color:#888">No Telegram linked — alerts won\'t be sent</span>';
         $('telegramBtn').textContent='📱 Connect Telegram';
         $('telegramBtn').onclick=()=>linkTelegram(addr);
       }
@@ -818,7 +805,7 @@ async function loadMonitorAlerts(addr){
   try{
     const res=await fetch(`/api/monitor/${encodeURIComponent(addr)}/alerts`);
     const data=await res.json();const alerts=data.alerts||[];
-    if(!alerts.length){$('monitorAlerts').innerHTML='<div style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:.75rem">No alerts yet — monitoring active</div>';return}
+    if(!alerts.length){$('monitorAlerts').innerHTML='<div style="color:#444;font-size:.85rem;text-align:center;padding:.75rem">No alerts yet — monitoring active</div>';return}
     let html='<div class="section-title" style="margin-top:.5rem">Recent Alerts</div>';
     for(const a of alerts.slice(0,10)){
       const sevColor=a.severity==='CRITICAL'?'#ff0044':a.severity==='WARNING'?'#ffaa00':'#00d4aa';
@@ -892,12 +879,12 @@ function renderRiskAnalysis(data){
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem">
       <span style="font-size:1.8rem">${levelEmoji[data.level]||'❓'}</span>
       <div><div style="font-size:1.2rem;font-weight:700;color:${color}">Risk Level: ${data.level}</div>
-      <div style="font-size:.85rem;color:var(--text-muted)">Score: ${data.overallScore}/100 (lower is safer)</div></div>
+      <div style="font-size:.85rem;color:#666">Score: ${data.overallScore}/100 (lower is safer)</div></div>
     </div>
     <div style="color:#bbb;font-size:.9rem;line-height:1.6">${data.summary}</div>`;
 
   const reports=data.tokenReports||[];
-  if(!reports.length){$('tokenReports').innerHTML='<div style="color:var(--text-muted);text-align:center;padding:1rem">No unknown/suspicious tokens to analyze.</div>';return}
+  if(!reports.length){$('tokenReports').innerHTML='<div style="color:#444;text-align:center;padding:1rem">No unknown/suspicious tokens to analyze.</div>';return}
 
   let html=collapsibleTitle('Token Risk Reports',` (${reports.length})`);
   for(const r of reports){
@@ -907,14 +894,14 @@ function renderRiskAnalysis(data){
       return `<div style="display:flex;align-items:center;gap:.5rem;padding:3px 0;font-size:.85rem"><span>${f.severity==='danger'?'🔴':f.severity==='warning'?'🟡':'ℹ️'}</span><span style="color:#aaa">${f.signal}</span><span style="color:${sc};font-size:.75rem;margin-left:auto">${f.category}</span></div>`;
     }).join('');
 
-    html+=`<div style="padding:1rem;background:#06060b;border:1px solid var(--border-solid, #1a1a28);border-left:3px solid ${c};border-radius:10px;margin-bottom:.5rem">
+    html+=`<div style="padding:1rem;background:#0a0a0a;border:1px solid #151520;border-left:3px solid ${c};border-radius:10px;margin-bottom:.5rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
         <strong>${r.symbol||short(r.mint)}</strong>
         <span class="badge" style="background:${c}18;color:${c}">${r.level} (${r.overallScore})</span>
       </div>
-      <div style="font-family:monospace;font-size:.75rem;color:var(--text-muted);margin-bottom:.5rem"><a href="https://solscan.io/token/${r.mint}" target="_blank" style="color:var(--accent)">${r.mint.slice(0,8)}…${r.mint.slice(-4)}</a></div>
-      ${r.metadata?.mintAuthority?`<div style="font-size:.8rem;color:var(--danger);margin-bottom:4px">⚠️ Mint authority: ${r.metadata.mintAuthority.slice(0,8)}…</div>`:''}
-      ${r.metadata?.freezeAuthority?`<div style="font-size:.8rem;color:var(--warning);margin-bottom:4px">❄️ Freeze authority: ${r.metadata.freezeAuthority.slice(0,8)}…</div>`:''}
+      <div style="font-family:monospace;font-size:.75rem;color:#444;margin-bottom:.5rem"><a href="https://solscan.io/token/${r.mint}" target="_blank" style="color:#7b61ff">${r.mint.slice(0,8)}…${r.mint.slice(-4)}</a></div>
+      ${r.metadata?.mintAuthority?`<div style="font-size:.8rem;color:#ff6644;margin-bottom:4px">⚠️ Mint authority: ${r.metadata.mintAuthority.slice(0,8)}…</div>`:''}
+      ${r.metadata?.freezeAuthority?`<div style="font-size:.8rem;color:#ffaa00;margin-bottom:4px">❄️ Freeze authority: ${r.metadata.freezeAuthority.slice(0,8)}…</div>`:''}
       ${flagsHtml}
     </div>`;
   }
@@ -925,12 +912,12 @@ function renderRiskAnalysis(data){
     html+=collapsibleTitle('Spender Analysis',` (${spenderRisks.length})`);
     for(const s of spenderRisks){
       const sColor=s.isKnown?'#00d4aa':s.riskScore>20?'#ff6644':'#ffaa00';
-      html+=`<div style="padding:.75rem;background:#06060b;border:1px solid var(--border-solid, #1a1a28);border-left:3px solid ${sColor};border-radius:10px;margin-bottom:.5rem">
+      html+=`<div style="padding:.75rem;background:#0a0a0a;border:1px solid #151520;border-left:3px solid ${sColor};border-radius:10px;margin-bottom:.5rem">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-family:monospace;font-size:.85rem"><a href="https://solscan.io/account/${s.spender}" target="_blank" style="color:var(--accent)">${s.spender.slice(0,8)}…${s.spender.slice(-4)}</a></span>
+          <span style="font-family:monospace;font-size:.85rem"><a href="https://solscan.io/account/${s.spender}" target="_blank" style="color:#7b61ff">${s.spender.slice(0,8)}…${s.spender.slice(-4)}</a></span>
           <span style="font-size:.85rem;color:${sColor}">${s.isKnown?'✅ Known DeFi':s.label||'Unknown'}</span>
         </div>
-        ${s.flags.map(f=>`<div style="font-size:.8rem;color:var(--text-muted);margin-top:4px">${f.severity==='danger'?'🔴':'🟡'} ${f.signal}</div>`).join('')}
+        ${s.flags.map(f=>`<div style="font-size:.8rem;color:#666;margin-top:4px">${f.severity==='danger'?'🔴':'🟡'} ${f.signal}</div>`).join('')}
       </div>`;
     }
     html+='</div>'; // close spender collapsible
@@ -992,16 +979,16 @@ if(jwt&&walletAddr){
     .catch(()=>{localStorage.removeItem('shieldfi_jwt');localStorage.removeItem('shieldfi_wallet');jwt=null;walletAddr=null});
 }
 </script>
-<footer style="text-align:center;padding:2rem 1rem;border-top:1px solid rgba(255,255,255,.06);color:var(--text-muted);font-size:.85rem;margin-top:3rem">
+<footer style="text-align:center;padding:2rem 1rem;border-top:1px solid rgba(255,255,255,.06);color:#444;font-size:.85rem;margin-top:3rem">
   <div style="margin-bottom:.75rem">
-    <a href="https://discord.gg/u47ekRUx" target="_blank" style="color:var(--accent);text-decoration:none;font-size:.85rem;display:inline-flex;align-items:center;gap:.4rem;padding:6px 14px;border:1px solid rgba(129,140,248,.25);border-radius:20px;transition:all .2s" onmouseover="this.style.borderColor='rgba(123,97,255,.5)';this.style.background='rgba(123,97,255,.06)'" onmouseout="this.style.borderColor='rgba(123,97,255,.25)';this.style.background='none'">
+    <a href="https://discord.gg/u47ekRUx" target="_blank" style="color:#7b61ff;text-decoration:none;font-size:.85rem;display:inline-flex;align-items:center;gap:.4rem;padding:6px 14px;border:1px solid rgba(123,97,255,.25);border-radius:20px;transition:all .2s" onmouseover="this.style.borderColor='rgba(123,97,255,.5)';this.style.background='rgba(123,97,255,.06)'" onmouseout="this.style.borderColor='rgba(123,97,255,.25)';this.style.background='none'">
       <svg width="18" height="14" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.4 37.4 0 0025.4.3a.2.2 0 00-.2-.1A58.4 58.4 0 0010.5 4.9a.2.2 0 00-.1.1C1.5 18.7-.9 32.2.3 45.5v.2a58.7 58.7 0 0017.7 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.6 38.6 0 01-5.5-2.6.2.2 0 01 0-.4c.4-.3.7-.6 1.1-.8a.2.2 0 01.2 0c11.6 5.3 24.2 5.3 35.7 0a.2.2 0 01.3 0l1 .9a.2.2 0 010 .3 36.3 36.3 0 01-5.5 2.6.2.2 0 00-.1.4 47.1 47.1 0 003.6 5.8.2.2 0 00.3.1A58.5 58.5 0 0070.4 45.7v-.2c1.4-15-2.3-28.4-9.8-40.1a.2.2 0 00-.1-.1zM23.7 37.3c-3.5 0-6.3-3.2-6.3-7s2.8-7 6.3-7 6.4 3.2 6.3 7-2.8 7-6.3 7zm23.3 0c-3.5 0-6.3-3.2-6.3-7s2.8-7 6.3-7 6.4 3.2 6.3 7-2.8 7-6.3 7z"/></svg>
       Got feedback? Tell us on Discord
     </a>
   </div>
   <div style="display:flex;justify-content:center;align-items:center;gap:1.2rem">
-    <a href="https://x.com/ShieldFiApp" target="_blank" style="color:var(--text-muted);text-decoration:none;display:flex" title="X / Twitter"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
-    <a href="https://discord.gg/u47ekRUx" target="_blank" style="color:var(--text-muted);text-decoration:none;display:flex" title="Discord"><svg width="22" height="17" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.4 37.4 0 0025.4.3a.2.2 0 00-.2-.1A58.4 58.4 0 0010.5 4.9a.2.2 0 00-.1.1C1.5 18.7-.9 32.2.3 45.5v.2a58.7 58.7 0 0017.7 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.6 38.6 0 01-5.5-2.6.2.2 0 01 0-.4c.4-.3.7-.6 1.1-.8a.2.2 0 01.2 0c11.6 5.3 24.2 5.3 35.7 0a.2.2 0 01.3 0l1 .9a.2.2 0 010 .3 36.3 36.3 0 01-5.5 2.6.2.2 0 00-.1.4 47.1 47.1 0 003.6 5.8.2.2 0 00.3.1A58.5 58.5 0 0070.4 45.7v-.2c1.4-15-2.3-28.4-9.8-40.1a.2.2 0 00-.1-.1zM23.7 37.3c-3.5 0-6.3-3.2-6.3-7s2.8-7 6.3-7 6.4 3.2 6.3 7-2.8 7-6.3 7zm23.3 0c-3.5 0-6.3-3.2-6.3-7s2.8-7 6.3-7 6.4 3.2 6.3 7-2.8 7-6.3 7z"/></svg></a>
+    <a href="https://x.com/ShieldFiApp" target="_blank" style="color:#666;text-decoration:none;display:flex" title="X / Twitter"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+    <a href="https://discord.gg/u47ekRUx" target="_blank" style="color:#666;text-decoration:none;display:flex" title="Discord"><svg width="22" height="17" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.4 37.4 0 0025.4.3a.2.2 0 00-.2-.1A58.4 58.4 0 0010.5 4.9a.2.2 0 00-.1.1C1.5 18.7-.9 32.2.3 45.5v.2a58.7 58.7 0 0017.7 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.6 38.6 0 01-5.5-2.6.2.2 0 01 0-.4c.4-.3.7-.6 1.1-.8a.2.2 0 01.2 0c11.6 5.3 24.2 5.3 35.7 0a.2.2 0 01.3 0l1 .9a.2.2 0 010 .3 36.3 36.3 0 01-5.5 2.6.2.2 0 00-.1.4 47.1 47.1 0 003.6 5.8.2.2 0 00.3.1A58.5 58.5 0 0070.4 45.7v-.2c1.4-15-2.3-28.4-9.8-40.1a.2.2 0 00-.1-.1zM23.7 37.3c-3.5 0-6.3-3.2-6.3-7s2.8-7 6.3-7 6.4 3.2 6.3 7-2.8 7-6.3 7zm23.3 0c-3.5 0-6.3-3.2-6.3-7s2.8-7 6.3-7 6.4 3.2 6.3 7-2.8 7-6.3 7z"/></svg></a>
   </div>
   <p style="margin-top:.5rem">ShieldFi — AI-powered wallet security for Solana</p>
 </footer>
