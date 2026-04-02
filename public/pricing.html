@@ -323,7 +323,7 @@ function highlightCurrentPlan(data) {
   if (plan !== 'free' && data.subscription?.expiresAt) {
     const expiry = new Date(data.subscription.expiresAt);
     const expiryEl = document.getElementById(plan + 'Expiry');
-    if (expiryEl) expiryEl.textContent = 'Expires: ' + expiry.toLocaleDateString();
+    if (expiryEl) expiryEl.textContent = 'Expires: ' + expiry.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
     // Disable buy buttons for current plan
     const btnsContainer = document.getElementById(plan + 'Buttons');
     if (btnsContainer) {
@@ -507,7 +507,7 @@ async function pay(plan, currency) {
 
     if (result && result.success) {
       const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
-      const expiry = new Date(result.subscription.expiresAt).toLocaleDateString();
+      const expiry = new Date(result.subscription.expiresAt).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
       showModal('success', 'Welcome to ' + planLabel + '!',
         'Your subscription is active until ' + expiry + '.',
         signature,
@@ -579,7 +579,7 @@ async function manualVerify() {
 
     if (result.success) {
       const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
-      const expiry = new Date(result.subscription.expiresAt).toLocaleDateString();
+      const expiry = new Date(result.subscription.expiresAt).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
       statusEl.className = 'status-msg success';
       statusEl.textContent = 'Verified! ' + planLabel + ' active until ' + expiry;
       showModal('success', 'Welcome to ' + planLabel + '!',
