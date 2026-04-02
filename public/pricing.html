@@ -81,6 +81,34 @@ nav{position:sticky;top:0;z-index:100;padding:.875rem 2rem;display:flex;justify-
 .status-msg.error{display:block;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:#f87171}
 .status-msg.loading{display:block;background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.3);color:var(--accent-bright)}
 
+/* Modal overlay */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal-box{background:var(--surface-1);border:1px solid var(--border);border-radius:16px;padding:2rem;max-width:480px;width:90%;text-align:center;animation:modalIn .3s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-box h2{font-size:1.5rem;font-weight:800;margin-bottom:.75rem}
+.modal-box p{color:var(--text-secondary);font-size:.9rem;margin-bottom:.5rem;word-break:break-all}
+.modal-box .modal-sig{font-family:monospace;font-size:.75rem;color:var(--text-muted);background:#06060b;padding:.5rem;border-radius:8px;margin:.75rem 0;word-break:break-all}
+.modal-box .modal-sig a{color:var(--accent-bright);text-decoration:underline}
+.modal-box .btn{margin-top:.75rem}
+.modal-box.success h2{color:var(--success)}
+.modal-box.error h2{color:#f87171}
+
+/* Current plan badge on card */
+.plan-card.current-plan{border-color:var(--success);position:relative}
+.plan-card.current-plan .current-badge{display:block}
+.current-badge{display:none;position:absolute;top:-10px;left:50%;transform:translateX(-50%);padding:.2rem .75rem;background:var(--success);color:#000;font-size:.65rem;font-weight:700;border-radius:100px;text-transform:uppercase;letter-spacing:.05em}
+.plan-expiry{font-size:.75rem;color:var(--text-muted);margin-top:.5rem;text-align:center}
+
+/* Manual verify section */
+.manual-verify{background:var(--surface-1);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-top:2rem}
+.manual-verify h3{font-size:.9rem;color:var(--text-secondary);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.05em}
+.manual-verify .mv-row{display:flex;gap:.5rem;flex-wrap:wrap}
+.manual-verify input,.manual-verify select{flex:1;min-width:150px;padding:10px 14px;background:#06060b;border:1px solid var(--border);border-radius:8px;color:#e2e2ea;font-size:.85rem;font-family:monospace}
+.manual-verify select{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;cursor:pointer}
+.manual-verify input:focus,.manual-verify select:focus{outline:none;border-color:var(--accent)}
+.manual-verify .btn{min-width:120px;justify-content:center}
+
 footer{position:relative;z-index:1;padding:2.5rem 0;border-top:1px solid var(--border);text-align:center}
 .footer-inner{max-width:1080px;margin:0 auto;padding:0 1.5rem}
 .footer-links{display:flex;justify-content:center;gap:1.5rem;margin-bottom:.75rem}
@@ -130,7 +158,8 @@ window._solanaReady = true;
   </div>
 
   <div class="plans">
-    <div class="plan-card">
+    <div class="plan-card" id="freeCard">
+      <span class="current-badge">Current Plan</span>
       <div class="plan-name">Free</div>
       <div class="plan-price">$0 <span>/forever</span></div>
       <div class="plan-desc">Get started with basic protection</div>
@@ -141,9 +170,11 @@ window._solanaReady = true;
         <li>Community support</li>
       </ul>
       <a href="/dashboard.html" class="pay-btn pay-sol" style="text-align:center;text-decoration:none;color:#fff">Go to Dashboard</a>
+      <div class="plan-expiry" id="freeExpiry"></div>
     </div>
 
     <div class="plan-card featured" id="guardianCard">
+      <span class="current-badge">Current Plan</span>
       <div class="plan-name">🛡️ Guardian</div>
       <div class="plan-price">$7 <span>/month</span></div>
       <div class="plan-desc">0.04 SOL or 7 USDC · For active traders</div>
@@ -154,13 +185,15 @@ window._solanaReady = true;
         <li>Up to 5 wallets</li>
         <li>24h scan history</li>
       </ul>
-      <div class="pay-buttons">
+      <div class="pay-buttons" id="guardianButtons">
         <button class="pay-btn pay-sol" onclick="pay('guardian','sol')" id="guardianSolBtn">Pay 0.04 SOL</button>
         <button class="pay-btn pay-usdc" onclick="pay('guardian','usdc')" id="guardianUsdcBtn">Pay 7 USDC</button>
       </div>
+      <div class="plan-expiry" id="guardianExpiry"></div>
     </div>
 
     <div class="plan-card" id="sentinelCard">
+      <span class="current-badge">Current Plan</span>
       <div class="plan-name">⚔️ Sentinel</div>
       <div class="plan-price">$19 <span>/month</span></div>
       <div class="plan-desc">0.11 SOL or 19 USDC · For power users</div>
@@ -171,14 +204,40 @@ window._solanaReady = true;
         <li>Advanced risk breakdown</li>
         <li>API access</li>
       </ul>
-      <div class="pay-buttons">
+      <div class="pay-buttons" id="sentinelButtons">
         <button class="pay-btn pay-sol" onclick="pay('sentinel','sol')" id="sentinelSolBtn">Pay 0.11 SOL</button>
         <button class="pay-btn pay-usdc" onclick="pay('sentinel','usdc')" id="sentinelUsdcBtn">Pay 19 USDC</button>
       </div>
+      <div class="plan-expiry" id="sentinelExpiry"></div>
     </div>
   </div>
 
   <div class="status-msg" id="statusMsg"></div>
+
+  <!-- Manual Verify Section -->
+  <div class="manual-verify" id="manualVerify" style="display:none">
+    <h3>Manual Payment Verification</h3>
+    <p style="color:var(--text-muted);font-size:.8rem;margin-bottom:1rem">Already paid but verification failed? Paste your transaction signature below.</p>
+    <div class="mv-row">
+      <input type="text" id="mvSignature" placeholder="Paste transaction signature...">
+      <select id="mvPlan">
+        <option value="guardian">Guardian</option>
+        <option value="sentinel">Sentinel</option>
+      </select>
+      <button class="btn" onclick="manualVerify()" id="mvBtn">Verify</button>
+    </div>
+    <div class="status-msg" id="mvStatus" style="margin-top:.75rem"></div>
+  </div>
+</div>
+
+<!-- Result Modal -->
+<div class="modal-overlay" id="resultModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" id="modalBox">
+    <h2 id="modalTitle"></h2>
+    <p id="modalMessage"></p>
+    <div class="modal-sig" id="modalSig" style="display:none"></div>
+    <div id="modalActions"></div>
+  </div>
 </div>
 
 <footer>
@@ -195,13 +254,18 @@ window._solanaReady = true;
 <script>
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 const PRICES = { guardian: { sol: 0.04, usdc: 7 }, sentinel: { sol: 0.11, usdc: 19 } };
+const RETRY_DELAYS = [5000, 10000, 15000];
 let connectedWallet = null;
 let treasury = '';
 
 async function init() {
-  const res = await fetch('/api/subscription/plans');
-  const data = await res.json();
-  treasury = data.treasury;
+  try {
+    const res = await fetch('/api/subscription/plans');
+    const data = await res.json();
+    treasury = data.treasury;
+  } catch (e) { console.error('Failed to load plans:', e); }
+  // Show manual verify section always
+  document.getElementById('manualVerify').style.display = '';
   if (window.solana?.isPhantom && window.solana.isConnected) {
     try {
       const resp = await window.solana.connect({ onlyIfTrusted: true });
@@ -223,15 +287,51 @@ async function connectWallet() {
   try {
     const resp = await window.solana.connect();
     setWallet(resp.publicKey.toString());
-  } catch (e) { console.error(e); }
+  } catch (e) {
+    console.error('Wallet connection failed:', e);
+    if (e.code === 4001 || e.message?.includes('reject')) {
+      showStatus('error', 'Wallet connection cancelled.');
+    }
+  }
 }
 
 async function checkStatus() {
   if (!connectedWallet) return;
-  const res = await fetch('/api/subscription/status?wallet=' + connectedWallet);
-  const data = await res.json();
-  if (data.plan !== 'free') {
-    showStatus('success', `You're on the ${data.plan.charAt(0).toUpperCase() + data.plan.slice(1)} plan! Expires: ${new Date(data.subscription.expiresAt).toLocaleDateString()}`);
+  try {
+    const res = await fetch('/api/subscription/status?wallet=' + connectedWallet);
+    const data = await res.json();
+    highlightCurrentPlan(data);
+  } catch (e) { console.error('Status check failed:', e); }
+}
+
+function highlightCurrentPlan(data) {
+  // Clear all current-plan states
+  document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('current-plan'));
+  document.querySelectorAll('.plan-expiry').forEach(e => e.textContent = '');
+
+  const plan = data.plan || 'free';
+  const cardId = plan === 'free' ? 'freeCard' : plan + 'Card';
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.classList.add('current-plan');
+    // For featured card, override the ::before badge
+    if (card.classList.contains('featured')) {
+      card.classList.remove('featured');
+    }
+  }
+
+  if (plan !== 'free' && data.subscription?.expiresAt) {
+    const expiry = new Date(data.subscription.expiresAt);
+    const expiryEl = document.getElementById(plan + 'Expiry');
+    if (expiryEl) expiryEl.textContent = 'Expires: ' + expiry.toLocaleDateString();
+    // Disable buy buttons for current plan
+    const btnsContainer = document.getElementById(plan + 'Buttons');
+    if (btnsContainer) {
+      btnsContainer.querySelectorAll('button').forEach(b => {
+        b.disabled = true;
+        b.textContent = '✓ Current Plan';
+      });
+    }
   }
 }
 
@@ -241,15 +341,81 @@ function showStatus(type, msg) {
   el.textContent = msg;
 }
 
+function showModal(type, title, message, signature, actions) {
+  const modal = document.getElementById('resultModal');
+  const box = document.getElementById('modalBox');
+  box.className = 'modal-box ' + type;
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalMessage').textContent = message;
+
+  const sigEl = document.getElementById('modalSig');
+  if (signature) {
+    sigEl.style.display = '';
+    sigEl.innerHTML = 'Tx: ' + signature.slice(0, 20) + '...' + signature.slice(-8) +
+      '<br><a href="https://solscan.io/tx/' + signature + '" target="_blank" rel="noopener">View on Solscan</a>';
+  } else {
+    sigEl.style.display = 'none';
+  }
+
+  const actionsEl = document.getElementById('modalActions');
+  actionsEl.innerHTML = '';
+  if (actions) {
+    actionsEl.innerHTML = actions;
+  } else {
+    actionsEl.innerHTML = '<button class="btn" onclick="closeModal()">OK</button>';
+  }
+
+  modal.classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('resultModal').classList.remove('active');
+}
+
+async function verifyWithRetry(signature, plan) {
+  for (let attempt = 0; attempt < RETRY_DELAYS.length; attempt++) {
+    const delay = RETRY_DELAYS[attempt];
+    showStatus('loading', `Waiting for confirmation (attempt ${attempt + 1}/${RETRY_DELAYS.length})... ${delay / 1000}s`);
+    await new Promise(r => setTimeout(r, delay));
+
+    showStatus('loading', `Verifying payment (attempt ${attempt + 1}/${RETRY_DELAYS.length})...`);
+    try {
+      const verifyRes = await fetch('/api/subscription/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: connectedWallet, txSignature: signature, plan }),
+      });
+      const result = await verifyRes.json();
+
+      if (result.success) {
+        return result;
+      }
+      // If server says tx not found or not confirmed, keep retrying
+      console.warn(`Verify attempt ${attempt + 1} failed:`, result.error);
+      if (attempt === RETRY_DELAYS.length - 1) {
+        return result; // Return last failure
+      }
+    } catch (e) {
+      console.error(`Verify attempt ${attempt + 1} network error:`, e);
+      if (attempt === RETRY_DELAYS.length - 1) {
+        return { success: false, error: 'Network error during verification: ' + e.message };
+      }
+    }
+  }
+}
+
 async function pay(plan, currency) {
   if (!connectedWallet) { await connectWallet(); if (!connectedWallet) return; }
-  if (!treasury) { showStatus('error', 'Treasury wallet not configured yet. Check back soon!'); return; }
+  if (!treasury) { showModal('error', 'Not Ready', 'Treasury wallet not configured yet. Check back soon!'); return; }
 
   const btnId = plan + (currency === 'sol' ? 'Sol' : 'Usdc') + 'Btn';
   const btn = document.getElementById(btnId);
+  const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Processing...';
   showStatus('loading', 'Preparing transaction...');
+
+  let signature = null;
 
   try {
     if (!window._solanaReady) {
@@ -315,33 +481,125 @@ async function pay(plan, currency) {
     tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
 
     showStatus('loading', 'Please approve the transaction in your wallet...');
-    const signed = await window.solana.signAndSendTransaction(tx);
-    const signature = signed.signature;
 
-    showStatus('loading', 'Confirming transaction...');
-    await new Promise(r => setTimeout(r, 5000));
-
-    showStatus('loading', 'Verifying payment...');
-    const verifyRes = await fetch('/api/subscription/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletAddress: connectedWallet, txSignature: signature, plan }),
-    });
-    const result = await verifyRes.json();
-
-    if (result.success) {
-      showStatus('success', `🎉 Welcome to ${plan.charAt(0).toUpperCase() + plan.slice(1)}! Active until ${new Date(result.subscription.expiresAt).toLocaleDateString()}`);
-      btn.textContent = '✓ Subscribed!';
-    } else {
-      showStatus('error', result.error || 'Verification failed');
+    let signed;
+    try {
+      signed = await window.solana.signAndSendTransaction(tx);
+    } catch (signErr) {
+      console.error('Sign/send error:', signErr);
+      // User rejected or closed wallet popup
+      if (signErr.code === 4001 || signErr.message?.includes('reject') || signErr.message?.includes('cancelled') || signErr.message?.includes('denied')) {
+        showModal('error', 'Transaction Cancelled', 'You cancelled the transaction in your wallet. No payment was made.');
+      } else {
+        showModal('error', 'Transaction Failed', signErr.message || 'Failed to sign transaction. Please try again.');
+      }
       btn.disabled = false;
-      btn.textContent = currency === 'sol' ? `Pay ${PRICES[plan].sol} SOL` : `Pay ${PRICES[plan].usdc} USDC`;
+      btn.textContent = originalText;
+      showStatus('error', 'Transaction was not completed.');
+      return;
+    }
+
+    signature = signed.signature;
+    showStatus('loading', 'Transaction sent! Verifying...');
+
+    // Verify with retry
+    const result = await verifyWithRetry(signature, plan);
+
+    if (result && result.success) {
+      const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
+      const expiry = new Date(result.subscription.expiresAt).toLocaleDateString();
+      showModal('success', 'Welcome to ' + planLabel + '!',
+        'Your subscription is active until ' + expiry + '.',
+        signature,
+        '<a href="/dashboard.html" class="btn" style="text-decoration:none;margin-right:.5rem">Go to Dashboard</a>' +
+        '<button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary)" onclick="closeModal()">Close</button>'
+      );
+      showStatus('success', 'Subscription activated! Welcome to ' + planLabel + '.');
+      btn.textContent = '✓ Subscribed!';
+      checkStatus(); // Refresh plan highlights
+    } else {
+      // All retries failed — show signature and manual verify option
+      const errMsg = result?.error || 'Verification failed after all attempts.';
+      showModal('error', 'Verification Failed', errMsg, signature,
+        '<button class="btn" onclick="manualVerifyFromModal(\'' + signature + '\',\'' + plan + '\')" style="margin-right:.5rem">Retry Verification</button>' +
+        '<button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary)" onclick="closeModal()">Close</button>'
+      );
+      showStatus('error', 'Payment sent but verification failed. Use manual verify below or try again later.');
+      // Pre-fill manual verify form
+      document.getElementById('mvSignature').value = signature;
+      document.getElementById('mvPlan').value = plan;
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
   } catch (err) {
-    console.error(err);
-    showStatus('error', err.message || 'Transaction failed');
+    console.error('Payment error:', err);
+    const errMsg = err.message || 'An unexpected error occurred.';
+    if (signature) {
+      showModal('error', 'Error After Payment', errMsg + ' Your transaction was sent — use manual verify below.', signature);
+      document.getElementById('mvSignature').value = signature;
+      document.getElementById('mvPlan').value = plan;
+      showStatus('error', 'Error occurred after payment. Your tx signature has been saved for manual verification.');
+    } else {
+      showModal('error', 'Payment Error', errMsg);
+      showStatus('error', errMsg);
+    }
     btn.disabled = false;
-    btn.textContent = currency === 'sol' ? `Pay ${PRICES[plan].sol} SOL` : `Pay ${PRICES[plan].usdc} USDC`;
+    btn.textContent = originalText;
+  }
+}
+
+async function manualVerifyFromModal(sig, plan) {
+  closeModal();
+  document.getElementById('mvSignature').value = sig;
+  document.getElementById('mvPlan').value = plan;
+  await manualVerify();
+}
+
+async function manualVerify() {
+  const sig = document.getElementById('mvSignature').value.trim();
+  const plan = document.getElementById('mvPlan').value;
+  const btn = document.getElementById('mvBtn');
+  const statusEl = document.getElementById('mvStatus');
+
+  if (!sig) { statusEl.className = 'status-msg error'; statusEl.textContent = 'Please enter a transaction signature.'; return; }
+  if (!connectedWallet) { statusEl.className = 'status-msg error'; statusEl.textContent = 'Please connect your wallet first.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Verifying...';
+  statusEl.className = 'status-msg loading';
+  statusEl.textContent = 'Verifying transaction...';
+
+  try {
+    const res = await fetch('/api/subscription/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: connectedWallet, txSignature: sig, plan }),
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
+      const expiry = new Date(result.subscription.expiresAt).toLocaleDateString();
+      statusEl.className = 'status-msg success';
+      statusEl.textContent = 'Verified! ' + planLabel + ' active until ' + expiry;
+      showModal('success', 'Welcome to ' + planLabel + '!',
+        'Your subscription is active until ' + expiry + '.',
+        sig,
+        '<a href="/dashboard.html" class="btn" style="text-decoration:none;margin-right:.5rem">Go to Dashboard</a>' +
+        '<button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary)" onclick="closeModal()">Close</button>'
+      );
+      checkStatus();
+    } else {
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = result.error || 'Verification failed. The transaction may not have confirmed yet — try again in a minute.';
+    }
+  } catch (e) {
+    console.error('Manual verify error:', e);
+    statusEl.className = 'status-msg error';
+    statusEl.textContent = 'Network error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Verify';
   }
 }
 

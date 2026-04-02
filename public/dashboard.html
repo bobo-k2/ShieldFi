@@ -494,9 +494,33 @@ async function checkSubscription(){
     const data=await res.json();
     const badge=$('planBadge');
     const link=$('upgradeLink');
-    if(data.plan==='guardian'){badge.textContent='🛡️ Guardian';badge.style.display='inline-block';badge.style.borderColor='#00d4aa';badge.style.color='#00d4aa';link.style.display='none';}
-    else if(data.plan==='sentinel'){badge.textContent='⚔️ Sentinel';badge.style.display='inline-block';badge.style.borderColor='#818cf8';badge.style.color='#818cf8';link.style.display='none';}
-    else{link.style.display='inline-flex';badge.style.display='none';}
+    if(data.plan==='guardian'||data.plan==='sentinel'){
+      const isGuardian=data.plan==='guardian';
+      const color=isGuardian?'#00d4aa':'#818cf8';
+      const icon=isGuardian?'🛡️':'⚔️';
+      const label=data.plan.charAt(0).toUpperCase()+data.plan.slice(1);
+      let badgeText=icon+' '+label;
+      if(data.subscription&&data.subscription.expiresAt){
+        const exp=new Date(data.subscription.expiresAt);
+        const now=new Date();
+        const daysLeft=Math.ceil((exp-now)/(1000*60*60*24));
+        if(daysLeft>0){
+          badgeText+=' · '+daysLeft+'d left';
+        }else{
+          badgeText+=' · Expired';
+        }
+      }
+      badge.textContent=badgeText;
+      badge.style.display='inline-block';
+      badge.style.borderColor=color;
+      badge.style.color=color;
+      link.style.display='none';
+    }else{
+      link.style.display='inline-flex';
+      badge.style.display='none';
+    }
+    // Also check for expiry warnings
+    checkSubWarning(walletAddr);
   }catch(e){console.error('Sub check failed',e);$('upgradeLink').style.display='inline-flex';}
 }
 
